@@ -3,59 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>丹田呼吸 V6</title>
+    <title>丹田呼吸 V7</title>
     <style>
-        body { font-family: sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 85%; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .timer { font-size: 5rem; font-weight: bold; margin: 20px 0; }
-        .status { font-size: 2rem; color: #3498db; min-height: 3rem; }
-        button { background: #2ecc71; color: white; border: none; padding: 20px; font-size: 1.5rem; border-radius: 50px; width: 100%; cursor: pointer; }
-        button:active { background: #27ae60; transform: scale(0.98); }
+        body { font-family: -apple-system, sans-serif; background: #f4f7f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; touch-action: manipulation; }
+        .box { background: white; padding: 40px 20px; border-radius: 24px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .timer { font-size: 6rem; font-weight: bold; margin: 10px 0; color: #2c3e50; font-variant-numeric: tabular-nums; }
+        .status { font-size: 2.5rem; font-weight: bold; color: #3498db; min-height: 4rem; transition: color 0.3s; }
+        .sets { font-size: 1.2rem; color: #7f8c8d; margin-bottom: 20px; }
+        button { background: #2ecc71; color: white; border: none; padding: 20px; font-size: 1.5rem; border-radius: 50px; width: 100%; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        button:active { transform: scale(0.95); background: #27ae60; }
+        button:disabled { background: #bdc3c7; box-shadow: none; }
+        .inhaling .status { color: #2ecc71; }
+        .exhaling .status { color: #e74c3c; }
     </style>
 </head>
-<body>
+<body id="body">
     <div class="box">
-        <h2 id="msg">丹田呼吸訓練</h2>
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
-        <button id="btn" onclick="start()">開始練習</button>
+        <div class="sets" id="stext">組數: 0 / 10</div>
+        <button id="btn" onclick="initAndStart()">開始練習</button>
     </div>
+
 <script>
+    let timerInterval = null;
+    let currentSet = 1;
+    let targetSets = 10;
+    let targetSec = 15;
     const synth = window.speechSynthesis;
-    function speak(txt, cb) {
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(txt);
+
+    function speak(text, callback) {
+        synth.cancel(); // 清除前一個語音
+        const u = new SpeechSynthesisUtterance(text);
         u.lang = 'zh-TW';
-        u.onend = () => { if(cb) cb(); };
+        u.rate = 1.0;
+        u.onend = () => { if (callback) callback(); };
+        
+        // 保險機制：若語音引擎卡住，1.5秒後強制執行下一步
+        let forceCall = setTimeout(() => {
+            if (callback) { callback(); callback = null; }
+        }, 2000);
+
+        u.onstart = () => { /* 語音開始時不動作 */ };
         synth.speak(u);
-        if(cb) setTimeout(cb, txt.length * 400 + 1000);
     }
-    function start() {
+
+    function initAndStart() {
+        // 解鎖 Android 音訊
+        const unlock = new SpeechSynthesisUtterance("");
+        synth.speak(unlock);
+        
         document.getElementById('btn').disabled = true;
         document.getElementById('btn').innerText = "練習中...";
+        
         speak("丹田呼吸，15秒10組練習。3。2。1。", () => {
-            inhale();
+            startCycle("inhale");
         });
     }
-    function inhale() {
-        document.getElementById('st').innerText = "吸氣";
-        speak("吸氣", () => count(15, "exhale"));
+
+    function startCycle(phase) {
+        if (currentSet > targetSets) {
+            finish();
+            return;
+        }
+
+        document.getElementById('stext').innerText = `組數: ${currentSet} / ${targetSets}`;
+        
+        if (phase === "inhale") {
+            document.getElementById('body').className = "inhaling";
+            document.getElementById('st').innerText = "吸氣";
+            speak("吸氣", () => runTimer(targetSec, "exhale"));
+        } else {
+            document.getElementById('body').className = "exhaling";
+            document.getElementById('st').innerText = "吐氣";
+            speak("吐氣", () => runTimer(targetSec, "next"));
+        }
     }
-    function exhale() {
-        document.getElementById('st').innerText = "吐氣";
-        speak("吐氣", () => count(15, "inhale"));
-    }
-    function count(s, next) {
-        let c = s;
-        const iv = setInterval(() => {
-            document.getElementById('tm').innerText = c < 10 ? '0'+c : c;
-            if(c <= 0) {
-                clearInterval(iv);
-                if(next === "exhale") exhale();
-                else inhale();
+
+    function runTimer(seconds, nextPhase) {
+        let timeLeft = seconds;
+        updateDisplay(timeLeft);
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateDisplay(timeLeft);
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (nextPhase === "exhale") {
+                    startCycle("exhale");
+                } else {
+                    currentSet++;
+                    startCycle("inhale");
+                }
             }
-            c--;
         }, 1000);
+    }
+
+    function updateDisplay(s) {
+        document.getElementById('tm').innerText = s < 10 ? '0' + s : s;
+    }
+
+    function finish() {
+        document.getElementById('st').innerText = "完成";
+        document.getElementById('body').className = "";
+        speak("練習結束", () => {
+            document.getElementById('btn').disabled = false;
+            document.getElementById('btn').innerText = "再次練習";
+            currentSet = 1;
+        });
     }
 </script>
 </body>
