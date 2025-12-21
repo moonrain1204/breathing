@@ -3,277 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 丹田呼吸訓練器 V2</title>
+    <title>AI 丹田呼吸 V5</title>
     <style>
-        body {
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            background-color: #f0f4f8;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            color: #333;
-            /* 防止手機雙擊縮放 */
-            touch-action: manipulation; 
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: #f0f4f8; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; color: #333; touch-action: manipulation; }
+        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
         h1 { margin-top: 0; color: #2c3e50; font-size: 1.8rem; }
-        
-        .settings {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
+        .settings { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 10px; }
         .input-group { display: flex; flex-direction: column; }
         .input-group label { font-size: 0.9rem; margin-bottom: 5px; color: #666; }
-        input[type="number"] {
-            padding: 10px;
-            font-size: 1.2rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            width: 70px;
-            text-align: center;
-        }
-        
-        .display-area {
-            margin: 20px 0;
-            min-height: 140px;
-        }
-        .status-text {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: #3498db;
-            margin-bottom: 5px;
-            transition: color 0.3s;
-            min-height: 3.5rem; /* 預留高度避免跳動 */
-        }
+        input[type="number"] { padding: 10px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 8px; width: 70px; text-align: center; }
+        .display-area { margin: 20px 0; min-height: 140px; }
+        .status-text { font-size: 2.2rem; font-weight: bold; color: #3498db; margin-bottom: 5px; min-height: 3.5rem; }
         .timer { font-size: 4.5rem; font-weight: bold; margin: 0; line-height: 1.2; }
         .sets-info { font-size: 1.1rem; color: #7f8c8d; margin-top: 10px; }
-        
-        button {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 15px 0;
-            font-size: 1.4rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.1s, background-color 0.3s;
-            width: 100%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        button:active { transform: scale(0.98); background-color: #27ae60; }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; transform: none; box-shadow: none;}
-        
-        /* 狀態顏色變化 */
-        .inhaling .status-text { color: #2ecc71; } /* 吸氣綠色 */
-        .exhaling .status-text { color: #e74c3c; } /* 吐氣紅色 */
+        button { background-color: #2ecc71; color: white; border: none; padding: 15px 0; font-size: 1.4rem; border-radius: 50px; cursor: pointer; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button:disabled { background-color: #bdc3c7; }
+        .inhaling .status-text { color: #2ecc71; }
+        .exhaling .status-text { color: #e74c3c; }
     </style>
 </head>
 <body>
 
 <div class="container" id="app">
     <h1>丹田呼吸訓練</h1>
-    
     <div class="settings">
         <div class="input-group">
             <label>每段秒數</label>
-            <input type="number" id="secInput" value="15" min="1">
+            <input type="number" id="secInput" value="15">
         </div>
         <div class="input-group">
             <label>總組數</label>
-            <input type="number" id="setInput" value="10" min="1">
+            <input type="number" id="setInput" value="10">
         </div>
     </div>
-
     <div class="display-area">
         <div class="status-text" id="statusText">準備開始</div>
         <div class="timer" id="timerDisplay">00</div>
         <div class="sets-info" id="setsDisplay">組數: 0 / 0</div>
     </div>
-
-    <button id="btnStart" onclick="startPractice()">開始練習</button>
+    <button id="btnStart" onclick="initAndStart()">開始練習</button>
 </div>
 
 <script>
     let timerInterval = null;
     let isRunning = false;
-    
-    // 參數變數
-    let targetSeconds = 15;
-    let targetSets = 10;
-    
-    // 狀態變數
-    let currentSet = 0;
-    let currentSec = 0;
-
-    // DOM 元素
-    const elBtn = document.getElementById('btnStart');
-    const elStatus = document.getElementById('statusText');
-    const elTimer = document.getElementById('timerDisplay');
-    const elSets = document.getElementById('setsDisplay');
-    const elApp = document.getElementById('app');
-
-    // 語音合成初始化
+    let targetSeconds, targetSets, currentSet, currentSec;
     const synth = window.speechSynthesis;
 
+    // 解鎖音訊並開始
+    function initAndStart() {
+        if (isRunning) return;
+        // 播放空白音解鎖
+        const unlock = new SpeechSynthesisUtterance("");
+        synth.speak(unlock);
+        startPractice();
+    }
+
+    // 強化版語音函數：支援接力 (callback)
     function speak(text, callback) {
-        // 強制停止上一句，確保即時性
-        synth.cancel();
+        // 不要 cancel，讓語音排隊自然說完，除非是「停」
+        if (text === "停") synth.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'zh-TW';
-        utterance.rate = 1.0; 
-        
-        // 解決部分安卓手機語音過快或過慢的問題，強制指定中文語音（若有）
-        // 這裡保持通用設定，依靠系統預設
+        utterance.rate = 1.0;
 
-        if (callback) {
-            utterance.onend = callback;
-        }
-        
-        // 錯誤處理：若語音引擎卡住，確保程式不會當機
-        utterance.onerror = (e) => {
-            console.error('語音錯誤', e);
-            if(callback) callback();
+        // 監聽結束
+        utterance.onend = () => {
+            if (callback) {
+                setTimeout(callback, 50); // 稍微緩衝
+                callback = null; // 防止 iOS 重複觸發
+            }
         };
+
+        // 安卓保險機制
+        setTimeout(() => {
+            if (callback) {
+                callback();
+                callback = null;
+            }
+        }, text.length * 500 + 800); // 根據字數動態估計時間
 
         synth.speak(utterance);
     }
 
     function startPractice() {
-        if (isRunning) return;
-
-        // 讀取設定
         targetSeconds = parseInt(document.getElementById('secInput').value);
         targetSets = parseInt(document.getElementById('setInput').value);
-
-        // 初始化介面
+        
         isRunning = true;
-        elBtn.disabled = true;
-        elBtn.innerText = "練習中...";
+        document.getElementById('btnStart').disabled = true;
         currentSet = 1;
-        elSets.innerText = `組數: ${currentSet} / ${targetSets}`;
-        elTimer.innerText = targetSeconds;
-        elStatus.innerText = "準備...";
-        
-        // 播放開頭介紹（不包含三二一）
-        const introText = `丹田呼吸，${targetSeconds}秒，${targetSets}組練習。`;
-        
-        speak(introText, () => {
-            // 介紹講完後，進入精準倒數
-            runStrictCountdown(3);
+        updateUI();
+
+        // 確保這串話講完才進倒數
+        const intro = `丹田呼吸，${targetSeconds}秒，${targetSets}組練習。`;
+        speak(intro, () => {
+            runCountdown(3);
         });
     }
 
-    // 新增：精確的倒數計時邏輯
-    function runStrictCountdown(count) {
+    function runCountdown(count) {
         if (count > 0) {
-            elStatus.innerText = count; // 畫面顯示數字
-            speak(String(count));       // 語音唸出數字
-            
-            // 使用 setTimeout 強制等待 1000 毫秒（1秒）後才執行下一個數字
-            setTimeout(() => {
-                runStrictCountdown(count - 1);
-            }, 1000);
-        } else {
-            // 倒數結束，開始吸氣
-            speak("吸氣", () => {
-                startInhale();
+            document.getElementById('statusText').innerText = count;
+            speak(String(count), () => {
+                setTimeout(() => runCountdown(count - 1), 500);
             });
+        } else {
+            speakInhale();
         }
     }
 
-    function startInhale() {
-        elStatus.innerText = "吸氣";
-        elApp.classList.remove('exhaling');
-        elApp.classList.add('inhaling');
-        
-        currentSec = targetSeconds;
-        updateTimerDisplay();
+    function speakInhale() {
+        document.getElementById('statusText').innerText = "吸氣";
+        document.getElementById('app').className = "container inhaling";
+        speak("吸氣", () => startTimer("exhale"));
+    }
 
+    function speakExhale() {
+        document.getElementById('statusText').innerText = "吐氣";
+        document.getElementById('app').className = "container exhaling";
+        speak("吐氣", () => startTimer("next"));
+    }
+
+    function startTimer(nextPhase) {
+        currentSec = targetSeconds;
+        refreshTimerDisplay();
+        clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             currentSec--;
-            updateTimerDisplay();
-
+            refreshTimerDisplay();
             if (currentSec <= 0) {
                 clearInterval(timerInterval);
-                speak("吐氣", () => {
-                    startExhale();
-                });
+                if (nextPhase === "exhale") speakExhale();
+                else checkSets();
             }
         }, 1000);
     }
 
-    function startExhale() {
-        elStatus.innerText = "吐氣";
-        elApp.classList.remove('inhaling');
-        elApp.classList.add('exhaling');
-
-        currentSec = targetSeconds;
-        updateTimerDisplay();
-
-        timerInterval = setInterval(() => {
-            currentSec--;
-            updateTimerDisplay();
-
-            if (currentSec <= 0) {
-                clearInterval(timerInterval);
-                checkNextStep();
-            }
-        }, 1000);
-    }
-
-    function checkNextStep() {
+    function checkSets() {
         if (currentSet < targetSets) {
             currentSet++;
-            elSets.innerText = `組數: ${currentSet} / ${targetSets}`;
-            
-            speak("吸氣", () => {
-                startInhale();
-            });
+            updateUI();
+            setTimeout(speakInhale, 400); 
         } else {
-            finishPractice();
+            document.getElementById('statusText').innerText = "完成";
+            speak("停", reset);
         }
     }
 
-    function finishPractice() {
-        elStatus.innerText = "完成";
-        elApp.classList.remove('inhaling', 'exhaling');
-        
-        speak("停", () => {
-            resetUI();
-        });
-    }
-
-    function resetUI() {
+    function reset() {
         isRunning = false;
-        elBtn.disabled = false;
-        elBtn.innerText = "開始練習";
-        elTimer.innerText = "00";
-        elStatus.innerText = "準備開始";
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('statusText').innerText = "準備開始";
+        document.getElementById('app').className = "container";
+        clearInterval(timerInterval);
     }
 
-    function updateTimerDisplay() {
-        // 補零顯示，例如 9 變成 09
-        elTimer.innerText = currentSec < 10 ? "0" + currentSec : currentSec;
+    function updateUI() {
+        document.getElementById('setsDisplay').innerText = `組數: ${currentSet} / ${targetSets}`;
     }
 
-    window.onbeforeunload = function() {
-        synth.cancel();
-    };
+    function refreshTimerDisplay() {
+        document.getElementById('timerDisplay').innerText = currentSec < 10 ? "0" + currentSec : currentSec;
+    }
 </script>
-
 </body>
 </html>
