@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v2.5</title>
+    <title>AI 丹田呼吸 v2.6</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 2vh; }
         .box { background: white; padding: 20px 20px; border-radius: 25px; text-align: center; width: 88%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -38,7 +38,7 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v2.5</div>
+    <div class="version-tag">v2.6</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -47,10 +47,10 @@
     const bgAudio = document.getElementById('bgAudio');
 
     function speakImmediate(txt) {
-        synth.cancel(); // 立刻停止之前的語音
+        synth.cancel();
         const u = new SpeechSynthesisUtterance(txt);
         u.lang = 'zh-TW';
-        u.rate = 1.2; // 略快，確保在 1 秒內播完
+        u.rate = 1.2;
         synth.speak(u);
     }
 
@@ -70,10 +70,9 @@
             st.style.fontSize = "1.8rem";
             st.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
             
-            // 步驟 1: 播報說明
             const intro = new SpeechSynthesisUtterance(`丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`);
             intro.lang = 'zh-TW';
-            intro.onend = startCountdown; // 說明播完才進倒數
+            intro.onend = startCountdown;
             synth.speak(intro);
         }
     }
@@ -90,29 +89,42 @@
             if (isPaused) { clearInterval(countTimer); return; }
             if (count > 0) {
                 tm.innerText = "0" + count;
-                speakImmediate(count.toString()); // 數字變化的瞬間發聲
+                speakImmediate(count.toString());
                 count--;
             } else {
                 clearInterval(countTimer);
-                startPhase();
+                // 正式開始第一階段
+                timeLeft = secPerPhase; 
+                startPhase(true); 
             }
-        }, 1000); // 嚴格 1 秒節拍
+        }, 1000);
     }
 
-    function startPhase() {
+    // 增加 isNewPhase 參數，用來判斷是否重置秒數
+    function startPhase(isNewPhase) {
         if (!isPracticeRunning || isPaused) return;
         if (currentSet > totalSets) { finish(); return; }
         
+        if (isNewPhase) {
+            timeLeft = secPerPhase;
+        }
+
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
-        timeLeft = secPerPhase;
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
         
-        speakImmediate(isInhale ? "吸氣" : "吐氣");
-        updateTm();
+        // 只有在新階段開始時才播報
+        if (isNewPhase) {
+            speakImmediate(isInhale ? "吸氣" : "吐氣");
+        }
         
+        updateTm();
+        startInterval();
+    }
+
+    function startInterval() {
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
             if (!isPaused) {
@@ -121,7 +133,7 @@
                     clearInterval(timer);
                     phase = (phase === "inhale") ? "exhale" : "inhale";
                     if (phase === "inhale") currentSet++;
-                    startPhase();
+                    startPhase(true); // 切換階段時重置秒數
                 } else {
                     updateTm();
                 }
@@ -130,22 +142,38 @@
     }
 
     function doPause() {
+        if (!isPracticeRunning) return;
         isPaused = !isPaused;
-        if (isPaused) { clearInterval(timer); synth.cancel(); bgAudio.pause(); } 
-        else { bgAudio.play(); startPhase(); }
-        document.getElementById('btnPause').innerText = isPaused ? "繼續" : "暫停";
-        document.getElementById('st').innerText = isPaused ? "已暫停" : (phase === "inhale" ? "吸氣" : "吐氣");
+        const btnPause = document.getElementById('btnPause');
+        const stEl = document.getElementById('st');
+
+        if (isPaused) { 
+            clearInterval(timer); 
+            synth.cancel(); 
+            bgAudio.pause(); 
+            btnPause.innerText = "繼續";
+            stEl.innerText = "已暫停";
+        } else { 
+            bgAudio.play().catch(() => {});
+            btnPause.innerText = "暫停";
+            // 繼續時，直接恢復計時器，不重新進入 startPhase(true)
+            startPhase(false); 
+        }
     }
 
     function doStop() {
-        clearInterval(timer); synth.cancel(); bgAudio.pause();
-        isPaused = false; isPracticeRunning = false;
+        if (timer) clearInterval(timer);
+        synth.cancel();
+        bgAudio.pause();
+        isPaused = false;
+        isPracticeRunning = false;
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
         document.getElementById('setup').style.display = 'flex';
         document.getElementById('btnStart').style.display = 'block';
         document.getElementById('btnPause').style.display = 'none';
+        document.getElementById('btnPause').innerText = "暫停";
         document.getElementById('btnStop').style.display = 'none';
     }
 
