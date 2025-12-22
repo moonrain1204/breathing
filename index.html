@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.5</title>
+    <title>AI 丹田呼吸 v1.6</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 5vh; }
         .box { background: white; padding: 30px 25px; border-radius: 25px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -12,7 +12,7 @@
         .input-group label { font-size: 1.4rem; color: #2c3e50; font-weight: bold; margin-bottom: 8px; }
         input { width: 80%; padding: 15px; border-radius: 15px; border: 3px solid #ecf0f1; text-align: center; font-size: 1.8rem; font-weight: bold; color: #34495e; box-sizing: border-box; }
         input:focus { border-color: #3498db; outline: none; }
-        .status { font-size: 2.8rem; font-weight: bold; color: #3498db; min-height: 4rem; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
+        .status { font-size: 2.2rem; font-weight: bold; color: #3498db; min-height: 6rem; display: flex; align-items: center; justify-content: center; margin-top: 10px; line-height: 1.2; }
         .timer { font-size: 6.5rem; font-weight: bold; margin: 10px 0; font-variant-numeric: tabular-nums; }
         .sets { color: #95a5a6; margin-bottom: 25px; font-size: 1.3rem; }
         .controls { display: flex; flex-direction: column; gap: 12px; }
@@ -45,7 +45,7 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-    <div class="version-tag">v1.5</div>
+    <div class="version-tag">v1.6</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -53,9 +53,8 @@
     let lastSpokenText = ""; 
     const synth = window.speechSynthesis;
     
-    // 定義更清晰的顏色常數
-    const COLOR_INHALE = "#008000"; // 森林深綠
-    const COLOR_EXHALE = "#0000ff"; // 深藍色
+    const COLOR_INHALE = "#008000"; 
+    const COLOR_EXHALE = "#0000ff"; 
 
     function speak(txt, callback) {
         if (txt === lastSpokenText) return; 
@@ -73,9 +72,20 @@
 
     function playIntro() {
         const tmDisplay = document.getElementById('tm');
+        const stDisplay = document.getElementById('st');
+        
+        // 1. 語音與文字同步呈現說明
         const introText = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`;
+        stDisplay.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
+        stDisplay.style.color = "#34495e";
+
         speak(introText, () => {
             if (!isPracticeRunning || isPaused) return;
+            
+            // 2. 進入倒數階段
+            stDisplay.innerText = "倒數計時";
+            stDisplay.style.color = "#3498db";
+
             speak("三", () => {
                 if (!isPaused) {
                     tmDisplay.innerText = "03";
