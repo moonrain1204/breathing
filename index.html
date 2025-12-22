@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.2</title>
+    <title>AI 丹田呼吸 v1.3</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; overflow: hidden; }
         .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -38,7 +38,7 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-    <div class="version-tag">v1.2</div>
+    <div class="version-tag">v1.3</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -61,6 +61,36 @@
         synth.speak(u);
     }
 
+    // 特別為開場設計的倒數顯示函數
+    function playIntro() {
+        const tmDisplay = document.getElementById('tm');
+        const introText = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`;
+        
+        speak(introText, () => {
+            if (!isPracticeRunning || isPaused) return;
+            
+            // 開始 3-2-1 文字與語音同步
+            speak("三", () => {
+                if (!isPaused) {
+                    tmDisplay.innerText = "03";
+                    speak("二", () => {
+                        if (!isPaused) {
+                            tmDisplay.innerText = "02";
+                            speak("一", () => {
+                                if (!isPaused) {
+                                    tmDisplay.innerText = "01";
+                                    setTimeout(() => {
+                                        if (!isPaused) startPhase();
+                                    }, 800);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     function doStart() {
         if (!isPracticeRunning) {
             secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
@@ -74,10 +104,7 @@
             document.getElementById('btnPause').style.display = 'block';
             document.getElementById('btnStop').style.display = 'block';
             
-            const intro = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。三。二。一。`;
-            speak(intro, () => {
-                if(isPracticeRunning && !isPaused) startPhase();
-            });
+            playIntro();
         }
     }
 
@@ -92,10 +119,10 @@
         
         if (isInhale) {
             statusEl.innerText = "吸氣";
-            statusEl.style.color = "#2ecc71"; // 綠色
+            statusEl.style.color = "#2ecc71";
         } else {
             statusEl.innerText = "吐氣";
-            statusEl.style.color = "#0000ff"; // 藍色
+            statusEl.style.color = "#0000ff";
         }
         
         speak(isInhale ? "吸氣" : "吐氣", () => {
@@ -122,7 +149,6 @@
 
     function doPause() {
         if (!isPracticeRunning) return;
-        
         isPaused = !isPaused;
         const btnPause = document.getElementById('btnPause');
         const statusEl = document.getElementById('st');
@@ -133,18 +159,22 @@
             lastSpokenText = ""; 
             btnPause.innerText = "繼續";
             statusEl.innerText = "已暫停";
-            statusEl.style.color = "#0000ff"; // 暫停改為藍色
+            statusEl.style.color = "#0000ff";
         } else {
             btnPause.innerText = "暫停";
-            if (phase === "inhale") {
-                statusEl.innerText = "吸氣";
-                statusEl.style.color = "#2ecc71";
-            } else {
-                statusEl.innerText = "吐氣";
-                statusEl.style.color = "#0000ff";
+            if (isPracticeRunning) {
+                // 如果是在開場 321 階段暫停，目前邏輯會直接跳進 startPhase
+                // 這裡簡單處理，恢復正確顏色
+                if (phase === "inhale") {
+                    statusEl.innerText = "吸氣";
+                    statusEl.style.color = "#2ecc71";
+                } else {
+                    statusEl.innerText = "吐氣";
+                    statusEl.style.color = "#0000ff";
+                }
+                updateTm();
+                startInterval();
             }
-            updateTm();
-            startInterval();
         }
     }
 
