@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v2.4</title>
+    <title>AI 丹田呼吸 v2.5</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 2vh; }
         .box { background: white; padding: 20px 20px; border-radius: 25px; text-align: center; width: 88%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -38,20 +38,19 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v2.4</div>
+    <div class="version-tag">v2.5</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
     let isPaused = false, isPracticeRunning = false, phase = "inhale";
-    let startTime = 0, phaseDuration = 0;
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
-    function speak(txt) {
-        synth.cancel();
+    function speakImmediate(txt) {
+        synth.cancel(); // 立刻停止之前的語音
         const u = new SpeechSynthesisUtterance(txt);
         u.lang = 'zh-TW';
-        u.rate = 1.1; // 稍微提升語速增加節奏感
+        u.rate = 1.2; // 略快，確保在 1 秒內播完
         synth.speak(u);
     }
 
@@ -66,42 +65,38 @@
             document.getElementById('btnStart').style.display = 'none';
             document.getElementById('btnPause').style.display = 'block';
             document.getElementById('btnStop').style.display = 'block';
-            playIntro();
+            
+            const st = document.getElementById('st');
+            st.style.fontSize = "1.8rem";
+            st.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
+            
+            // 步驟 1: 播報說明
+            const intro = new SpeechSynthesisUtterance(`丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`);
+            intro.lang = 'zh-TW';
+            intro.onend = startCountdown; // 說明播完才進倒數
+            synth.speak(intro);
         }
     }
 
-    function playIntro() {
+    function startCountdown() {
+        if (!isPracticeRunning || isPaused) return;
         const st = document.getElementById('st');
         const tm = document.getElementById('tm');
-        st.style.fontSize = "1.8rem";
-        st.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
+        st.style.fontSize = "4rem";
+        st.innerText = "倒數計時";
         
-        speak(`丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`);
-        
-        // 使用 setTimeout 鏈條，不依賴 onend，達成強制同步
-        setTimeout(() => {
-            if (isPaused || !isPracticeRunning) return;
-            st.style.fontSize = "4rem"; 
-            st.innerText = "倒數計時";
-            
-            // 3秒處：語音與畫面同時觸發
-            speak("三"); tm.innerText = "03";
-            
-            setTimeout(() => {
-                if (isPaused) return;
-                speak("二"); tm.innerText = "02";
-                
-                setTimeout(() => {
-                    if (isPaused) return;
-                    speak("一"); tm.innerText = "01";
-                    
-                    setTimeout(() => {
-                        if (isPaused) return;
-                        startPhase();
-                    }, 1000);
-                }, 1000);
-            }, 1000);
-        }, 3500); // 這裡的時間是根據前句開場白長度預估
+        let count = 3;
+        const countTimer = setInterval(() => {
+            if (isPaused) { clearInterval(countTimer); return; }
+            if (count > 0) {
+                tm.innerText = "0" + count;
+                speakImmediate(count.toString()); // 數字變化的瞬間發聲
+                count--;
+            } else {
+                clearInterval(countTimer);
+                startPhase();
+            }
+        }, 1000); // 嚴格 1 秒節拍
     }
 
     function startPhase() {
@@ -110,39 +105,34 @@
         
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
-        phaseDuration = secPerPhase;
-        startTime = Date.now();
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
         
-        // 同樣，吸氣吐氣與計時器同時啟動
-        speak(isInhale ? "吸氣" : "吐氣");
+        speakImmediate(isInhale ? "吸氣" : "吐氣");
         updateTm();
-        startInterval();
-    }
-
-    function startInterval() {
+        
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
-            if (!isPaused && isPracticeRunning) {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                timeLeft = phaseDuration - elapsed;
-                if (timeLeft <= 0) {
-                    timeLeft = 0; updateTm(); clearInterval(timer);
+            if (!isPaused) {
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timer);
                     phase = (phase === "inhale") ? "exhale" : "inhale";
                     if (phase === "inhale") currentSet++;
                     startPhase();
-                } else { updateTm(); }
+                } else {
+                    updateTm();
+                }
             }
-        }, 200); // 提高刷新率讓視覺更順暢
+        }, 1000);
     }
 
     function doPause() {
         isPaused = !isPaused;
         if (isPaused) { clearInterval(timer); synth.cancel(); bgAudio.pause(); } 
-        else { bgAudio.play(); startTime = Date.now() - (phaseDuration - timeLeft) * 1000; startInterval(); }
+        else { bgAudio.play(); startPhase(); }
         document.getElementById('btnPause').innerText = isPaused ? "繼續" : "暫停";
         document.getElementById('st').innerText = isPaused ? "已暫停" : (phase === "inhale" ? "吸氣" : "吐氣");
     }
@@ -160,13 +150,7 @@
     }
 
     function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
-    function finish() { isPracticeRunning = false; speak("練習完成"); setTimeout(doStop, 2000); }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'visible' && isPracticeRunning && !isPaused) {
-            startInterval();
-        }
-    });
+    function finish() { isPracticeRunning = false; speakImmediate("練習完成"); setTimeout(doStop, 2000); }
 </script>
 </body>
 </html>
