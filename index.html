@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.0</title>
+    <title>AI 丹田呼吸 v1.1</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; }
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; overflow: hidden; }
         .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .settings { display: flex; gap: 10px; margin-bottom: 20px; }
         .input-group { flex: 1; display: flex; flex-direction: column; }
@@ -15,20 +15,12 @@
         .timer { font-size: 6.5rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
         .sets { color: #95a5a6; margin-bottom: 25px; font-size: 1.2rem; }
         .controls { display: flex; flex-direction: column; gap: 10px; }
-        button { width: 100%; padding: 18px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        button { width: 100%; padding: 18px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
         button:active { transform: scale(0.96); opacity: 0.9; }
-        
-        /* 左下角版本標註 */
-        .version-tag {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            font-size: 12px;
-            color: #bdc3c7;
-        }
+        .version-tag { position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: #bdc3c7; }
     </style>
 </head>
 <body>
@@ -46,8 +38,7 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-
-    <div class="version-tag">v1.0</div>
+    <div class="version-tag">v1.1</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -71,27 +62,23 @@
     }
 
     function doStart() {
-        if (isPaused) { 
-            isPaused = false; 
-            document.getElementById('btnPause').innerText = "暫停"; 
-            startInterval();
-            return; 
-        }
-        
-        secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
-        totalSets = parseInt(document.getElementById('setIn').value) || 10;
-        currentSet = 1; phase = "inhale";
-        isPracticeRunning = true;
+        if (!isPracticeRunning) {
+            secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
+            totalSets = parseInt(document.getElementById('setIn').value) || 10;
+            currentSet = 1; phase = "inhale";
+            isPracticeRunning = true;
+            isPaused = false;
 
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('btnStart').style.display = 'none';
-        document.getElementById('btnPause').style.display = 'block';
-        document.getElementById('btnStop').style.display = 'block';
-        
-        const intro = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。三。二。一。`;
-        speak(intro, () => {
-            if(isPracticeRunning) startPhase();
-        }); 
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('btnStart').style.display = 'none';
+            document.getElementById('btnPause').style.display = 'block';
+            document.getElementById('btnStop').style.display = 'block';
+            
+            const intro = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。三。二。一。`;
+            speak(intro, () => {
+                if(isPracticeRunning && !isPaused) startPhase();
+            });
+        }
     }
 
     function startPhase() {
@@ -114,7 +101,7 @@
     function startInterval() {
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
-            if (!isPaused) {
+            if (!isPaused && isPracticeRunning) {
                 timeLeft--;
                 updateTm();
                 if (timeLeft <= 0) {
@@ -128,15 +115,23 @@
     }
 
     function doPause() {
+        if (!isPracticeRunning) return;
+        
         isPaused = !isPaused;
-        document.getElementById('btnPause').innerText = isPaused ? "繼續" : "暫停";
+        const btnPause = document.getElementById('btnPause');
+        
         if (isPaused) {
             clearInterval(timer);
             synth.cancel();
             lastSpokenText = ""; 
+            btnPause.innerText = "繼續";
             document.getElementById('st').innerText = "已暫停";
         } else {
+            btnPause.innerText = "暫停";
             document.getElementById('st').innerText = (phase === "inhale" ? "吸氣" : "吐氣");
+            // 繼續時：不等待語音，直接啟動計時
+            updateTm();
+            startInterval();
         }
     }
 
