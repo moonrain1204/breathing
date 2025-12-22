@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.9</title>
+    <title>AI 丹田呼吸 v2.0</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 5vh; }
         .box { background: white; padding: 25px 20px; border-radius: 25px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -11,17 +11,15 @@
         .input-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
         .input-group label { font-size: 1.4rem; color: #2c3e50; font-weight: bold; margin-bottom: 5px; }
         input { width: 80%; padding: 12px; border-radius: 15px; border: 3px solid #ecf0f1; text-align: center; font-size: 1.8rem; font-weight: bold; color: #34495e; box-sizing: border-box; }
-        input:focus { border-color: #3498db; outline: none; }
         .status { font-size: 4.3rem; font-weight: bold; color: #3498db; min-height: 7.5rem; display: flex; align-items: center; justify-content: center; margin-top: 10px; line-height: 1.1; white-space: pre-line; }
         .timer { font-size: 6.5rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
         .sets { color: #95a5a6; margin-bottom: 20px; font-size: 1.3rem; }
         .controls { display: flex; flex-direction: column; gap: 10px; }
-        button { width: 100%; padding: 18px; font-size: 1.5rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
-        #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        button { width: 100%; padding: 18px; font-size: 1.5rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        #btnStart { background: #2ecc71; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
-        .version-tag { position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: #bdc3c7; z-index: 999; pointer-events: none; }
+        .version-tag { position: fixed; bottom: 10px; left: 10px; font-size: 12px; color: #bdc3c7; z-index: 999; }
     </style>
 </head>
 <body>
@@ -39,27 +37,32 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-    <div class="version-tag">v1.9</div>
+    <audio id="silentAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
+    <div class="version-tag">v2.0</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
     let isPaused = false, isPracticeRunning = false, phase = "inhale";
-    let lastSpokenText = "", startTime = 0, phaseDuration = 0;
+    let startTime = 0, phaseDuration = 0;
     const synth = window.speechSynthesis;
-    const COLOR_INHALE = "#008000", COLOR_EXHALE = "#0000ff";
+    const silentAudio = document.getElementById('silentAudio');
 
     function speak(txt, callback) {
-        if (txt === lastSpokenText) return;
-        lastSpokenText = txt;
         synth.cancel();
         const u = new SpeechSynthesisUtterance(txt);
-        u.lang = 'zh-TW'; u.rate = 1.0;
-        u.onend = () => { lastSpokenText = ""; if (callback && !isPaused) callback(); };
+        u.lang = 'zh-TW';
+        u.onend = () => { if (callback && !isPaused) callback(); };
         synth.speak(u);
+    }
+
+    // 啟動背景音訊
+    function enableBackgroundMode() {
+        silentAudio.play().catch(e => console.log("Audio play blocked"));
     }
 
     function doStart() {
         if (!isPracticeRunning) {
+            enableBackgroundMode(); // 關鍵：使用者點擊時啟動音軌
             secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
             totalSets = parseInt(document.getElementById('setIn').value) || 10;
             currentSet = 1; phase = "inhale";
@@ -73,16 +76,16 @@
     }
 
     function playIntro() {
-        const stDisplay = document.getElementById('st');
-        const tmDisplay = document.getElementById('tm');
-        stDisplay.style.fontSize = "2rem";
-        stDisplay.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
+        const st = document.getElementById('st');
+        const tm = document.getElementById('tm');
+        st.style.fontSize = "2rem";
+        st.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
         speak(`丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`, () => {
             if (!isPracticeRunning || isPaused) return;
-            stDisplay.style.fontSize = "4.3rem"; stDisplay.innerText = "倒數計時";
-            speak("三", () => { tmDisplay.innerText = "03"; 
-            speak("二", () => { tmDisplay.innerText = "02"; 
-            speak("一", () => { tmDisplay.innerText = "01"; 
+            st.style.fontSize = "4.3rem"; st.innerText = "倒數計時";
+            speak("三", () => { tm.innerText = "03"; 
+            speak("二", () => { tm.innerText = "02"; 
+            speak("一", () => { tm.innerText = "01"; 
             setTimeout(() => { if (!isPaused) startPhase(); }, 800); }); }); });
         });
     }
@@ -90,18 +93,14 @@
     function startPhase() {
         if (!isPracticeRunning || isPaused) return;
         if (currentSet > totalSets) { finish(); return; }
-        
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
         phaseDuration = secPerPhase;
-        startTime = Date.now(); // 紀錄精確開始時間
-        
+        startTime = Date.now();
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
-        statusEl.style.fontSize = "4.3rem";
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
-        statusEl.style.color = isInhale ? COLOR_INHALE : COLOR_EXHALE;
-        
+        statusEl.style.color = isInhale ? "#008000" : "#0000ff";
         speak(isInhale ? "吸氣" : "吐氣", () => { startInterval(); });
     }
 
@@ -109,50 +108,34 @@
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
             if (!isPaused && isPracticeRunning) {
-                // 使用時間戳校準：剩餘秒數 = 總秒數 - (現在 - 開始) / 1000
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
                 timeLeft = phaseDuration - elapsed;
-                
                 if (timeLeft <= 0) {
-                    timeLeft = 0;
-                    updateTm();
-                    clearInterval(timer);
+                    timeLeft = 0; updateTm(); clearInterval(timer);
                     phase = (phase === "inhale") ? "exhale" : "inhale";
                     if (phase === "inhale") currentSet++;
                     startPhase();
-                } else {
-                    updateTm();
-                }
+                } else { updateTm(); }
             }
-        }, 200); // 提高檢查頻率至 0.2 秒以利恢復
+        }, 500);
     }
 
-    // 當使用者回到頁面時觸發校準
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === 'visible' && isPracticeRunning && !isPaused) {
-            startInterval(); // 重新啟動計時器進行追補
+            startInterval();
         }
     });
 
     function doPause() {
         isPaused = !isPaused;
-        const btnPause = document.getElementById('btnPause');
-        const statusEl = document.getElementById('st');
-        if (isPaused) {
-            clearInterval(timer);
-            synth.cancel();
-            btnPause.innerText = "繼續";
-            statusEl.innerText = "已暫停";
-        } else {
-            btnPause.innerText = "暫停";
-            startTime = Date.now() - (phaseDuration - timeLeft) * 1000; // 恢復時重新校對開始時間
-            statusEl.innerText = (phase === "inhale" ? "吸氣" : "吐氣");
-            startInterval();
-        }
+        if (isPaused) { clearInterval(timer); synth.cancel(); silentAudio.pause(); } 
+        else { silentAudio.play(); startTime = Date.now() - (phaseDuration - timeLeft) * 1000; startInterval(); }
+        document.getElementById('btnPause').innerText = isPaused ? "繼續" : "暫停";
+        document.getElementById('st').innerText = isPaused ? "已暫停" : (phase === "inhale" ? "吸氣" : "吐氣");
     }
 
     function doStop() {
-        clearInterval(timer); synth.cancel();
+        clearInterval(timer); synth.cancel(); silentAudio.pause();
         isPaused = false; isPracticeRunning = false;
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
