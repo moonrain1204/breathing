@@ -3,33 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.4</title>
+    <title>AI 丹田呼吸 v1.5</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 5vh; }
         .box { background: white; padding: 30px 25px; border-radius: 25px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        
-        /* 設定區域放大與上移 */
         .settings { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
         .input-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
-        
-        /* 標籤：準備開始的一半大且粗體 */
         .input-group label { font-size: 1.4rem; color: #2c3e50; font-weight: bold; margin-bottom: 8px; }
-        
-        /* 輸入框放大 */
         input { width: 80%; padding: 15px; border-radius: 15px; border: 3px solid #ecf0f1; text-align: center; font-size: 1.8rem; font-weight: bold; color: #34495e; box-sizing: border-box; }
         input:focus { border-color: #3498db; outline: none; }
-
         .status { font-size: 2.8rem; font-weight: bold; color: #3498db; min-height: 4rem; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
         .timer { font-size: 6.5rem; font-weight: bold; margin: 10px 0; font-variant-numeric: tabular-nums; }
         .sets { color: #95a5a6; margin-bottom: 25px; font-size: 1.3rem; }
-        
         .controls { display: flex; flex-direction: column; gap: 12px; }
         button { width: 100%; padding: 18px; font-size: 1.5rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
         button:active { transform: scale(0.96); opacity: 0.9; }
-        
         .version-tag { position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: #bdc3c7; }
     </style>
 </head>
@@ -45,24 +36,26 @@
                 <input type="number" id="setIn" value="10">
             </div>
         </div>
-        
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
         <div class="sets" id="setDisp">組數: 0 / 0</div>
-        
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-    <div class="version-tag">v1.4</div>
+    <div class="version-tag">v1.5</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
     let isPaused = false, isPracticeRunning = false, phase = "inhale";
     let lastSpokenText = ""; 
     const synth = window.speechSynthesis;
+    
+    // 定義更清晰的顏色常數
+    const COLOR_INHALE = "#008000"; // 森林深綠
+    const COLOR_EXHALE = "#0000ff"; // 深藍色
 
     function speak(txt, callback) {
         if (txt === lastSpokenText) return; 
@@ -81,7 +74,6 @@
     function playIntro() {
         const tmDisplay = document.getElementById('tm');
         const introText = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`;
-        
         speak(introText, () => {
             if (!isPracticeRunning || isPaused) return;
             speak("三", () => {
@@ -110,12 +102,10 @@
             currentSet = 1; phase = "inhale";
             isPracticeRunning = true;
             isPaused = false;
-
             document.getElementById('setup').style.display = 'none';
             document.getElementById('btnStart').style.display = 'none';
             document.getElementById('btnPause').style.display = 'block';
             document.getElementById('btnStop').style.display = 'block';
-            
             playIntro();
         }
     }
@@ -123,20 +113,12 @@
     function startPhase() {
         if (!isPracticeRunning || isPaused) return;
         if (currentSet > totalSets) { finish(); return; }
-        
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
-        
-        if (isInhale) {
-            statusEl.innerText = "吸氣";
-            statusEl.style.color = "#2ecc71";
-        } else {
-            statusEl.innerText = "吐氣";
-            statusEl.style.color = "#0000ff";
-        }
-        
+        statusEl.innerText = isInhale ? "吸氣" : "吐氣";
+        statusEl.style.color = isInhale ? COLOR_INHALE : COLOR_EXHALE;
         speak(isInhale ? "吸氣" : "吐氣", () => {
             updateTm();
             startInterval();
@@ -164,23 +146,17 @@
         isPaused = !isPaused;
         const btnPause = document.getElementById('btnPause');
         const statusEl = document.getElementById('st');
-        
         if (isPaused) {
             clearInterval(timer);
             synth.cancel();
             lastSpokenText = ""; 
             btnPause.innerText = "繼續";
             statusEl.innerText = "已暫停";
-            statusEl.style.color = "#0000ff";
+            statusEl.style.color = (phase === "inhale") ? COLOR_INHALE : COLOR_EXHALE;
         } else {
             btnPause.innerText = "暫停";
-            if (phase === "inhale") {
-                statusEl.innerText = "吸氣";
-                statusEl.style.color = "#2ecc71";
-            } else {
-                statusEl.innerText = "吐氣";
-                statusEl.style.color = "#0000ff";
-            }
+            statusEl.innerText = (phase === "inhale" ? "吸氣" : "吐氣");
+            statusEl.style.color = (phase === "inhale") ? COLOR_INHALE : COLOR_EXHALE;
             updateTm();
             startInterval();
         }
@@ -203,16 +179,8 @@
         document.getElementById('setDisp').innerText = "組數: 0 / 0";
     }
 
-    function updateTm() { 
-        document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; 
-    }
-
-    function finish() { 
-        isPracticeRunning = false;
-        speak("停", () => {
-            setTimeout(doStop, 1000);
-        });
-    }
+    function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
+    function finish() { isPracticeRunning = false; speak("停", () => { setTimeout(doStop, 1000); }); }
 </script>
 </body>
 </html>
