@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 V13</title>
+    <title>AI 丹田呼吸 V14</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -40,26 +40,15 @@
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
-    let isPaused = false, phase = "inhale";
+    let isPaused = false, isPracticeRunning = false, phase = "inhale";
     const synth = window.speechSynthesis;
 
     function speak(txt, callback) {
-        synth.cancel();
+        synth.cancel(); 
         const u = new SpeechSynthesisUtterance(txt);
         u.lang = 'zh-TW';
         u.rate = 1.0;
-        
-        // 當語音講完時才執行後續動作
         u.onend = () => { if (callback && !isPaused) callback(); };
-        
-        // 針對部分安卓 Chrome 的保險機制（防止 onend 沒觸發）
-        let timerSafety = setTimeout(() => {
-            if (callback && !isPaused && !synth.speaking) {
-                callback();
-                callback = null;
-            }
-        }, txt.length * 500 + 1000);
-
         synth.speak(u);
     }
 
@@ -74,25 +63,33 @@
         secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
         totalSets = parseInt(document.getElementById('setIn').value) || 10;
         currentSet = 1; phase = "inhale";
-        
+        isPracticeRunning = true;
+
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         
         const intro = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。三。二。一。`;
-        speak(intro, startPhase); // 語音講完 intro 後才執行 startPhase
+        // 只說開場白，說完後直接進 startPhase，裡面會處理「吸氣」
+        speak(intro, () => {
+            if(isPracticeRunning) startPhase();
+        }); 
     }
 
     function startPhase() {
+        if (!isPracticeRunning || isPaused) return;
         if (currentSet > totalSets) { finish(); return; }
+        
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
-        
         const isInhale = (phase === "inhale");
+        
+        // 更新介面
         document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
         document.getElementById('st').style.color = isInhale ? "#2ecc71" : "#e74c3c";
         
+        // 播放「吸氣」或「吐氣」，說完後才開始倒數
         speak(isInhale ? "吸氣" : "吐氣", () => {
             updateTm();
             startInterval();
@@ -107,8 +104,10 @@
                 updateTm();
                 if (timeLeft <= 0) {
                     clearInterval(timer);
-                    if (phase === "inhale") { phase = "exhale"; startPhase(); }
-                    else { phase = "inhale"; currentSet++; startPhase(); }
+                    // 切換階段並自動進入下一動
+                    phase = (phase === "inhale") ? "exhale" : "inhale";
+                    if (phase === "inhale") currentSet++;
+                    startPhase();
                 }
             }
         }, 1000);
@@ -122,6 +121,7 @@
             synth.cancel();
             document.getElementById('st').innerText = "已暫停";
         } else {
+            // 恢復時顯示正確狀態，但不重複播報語音，直接繼續跑秒
             document.getElementById('st').innerText = (phase === "inhale" ? "吸氣" : "吐氣");
         }
     }
@@ -130,6 +130,7 @@
         clearInterval(timer);
         synth.cancel();
         isPaused = false;
+        isPracticeRunning = false;
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
@@ -146,8 +147,9 @@
     }
 
     function finish() { 
+        isPracticeRunning = false;
         speak("練習完成", () => {
-            setTimeout(doStop, 1500);
+            setTimeout(doStop, 1000);
         });
     }
 </script>
