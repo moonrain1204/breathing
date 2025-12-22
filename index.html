@@ -3,34 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 V10</title>
+    <title>AI 丹田呼吸 V13</title>
     <style>
-        body { font-family: sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .settings { display: flex; gap: 10px; margin-bottom: 20px; }
-        .input-group { flex: 1; }
-        input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
-        .status { font-size: 2.5rem; font-weight: bold; color: #3498db; min-height: 3.5rem; }
-        .timer { font-size: 6rem; font-weight: bold; margin: 10px 0; }
-        .sets { color: #888; margin-bottom: 20px; font-size: 1.1rem; }
-        button { width: 100%; padding: 15px; font-size: 1.3rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-        #btnStart { background: #2ecc71; color: white; }
+        .input-group { flex: 1; display: flex; flex-direction: column; }
+        .input-group label { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; box-sizing: border-box; }
+        .status { font-size: 2.8rem; font-weight: bold; color: #3498db; min-height: 4rem; display: flex; align-items: center; justify-content: center; }
+        .timer { font-size: 6.5rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
+        .sets { color: #95a5a6; margin-bottom: 25px; font-size: 1.2rem; }
+        .controls { display: flex; flex-direction: column; gap: 10px; }
+        button { width: 100%; padding: 18px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
+        button:active { transform: scale(0.96); opacity: 0.9; }
     </style>
 </head>
 <body>
     <div class="box">
         <div id="setup" class="settings">
-            <div class="input-group"><small>秒數</small><input type="number" id="secIn" value="15"></div>
-            <div class="input-group"><small>組數</small><input type="number" id="setIn" value="10"></div>
+            <div class="input-group"><label>秒數</label><input type="number" id="secIn" value="15"></div>
+            <div class="input-group"><label>組數</label><input type="number" id="setIn" value="10"></div>
         </div>
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
         <div class="sets" id="setDisp">組數: 0 / 0</div>
-        <button id="btnStart" onclick="doStart()">開始練習</button>
-        <button id="btnPause" onclick="doPause()">暫停</button>
-        <button id="btnStop" onclick="doStop()">停止重設</button>
+        <div class="controls">
+            <button id="btnStart" onclick="doStart()">開始練習</button>
+            <button id="btnPause" onclick="doPause()">暫停</button>
+            <button id="btnStop" onclick="doStop()">停止重設</button>
+        </div>
     </div>
 
 <script>
@@ -38,16 +43,33 @@
     let isPaused = false, phase = "inhale";
     const synth = window.speechSynthesis;
 
-    function speak(txt) {
+    function speak(txt, callback) {
         synth.cancel();
         const u = new SpeechSynthesisUtterance(txt);
         u.lang = 'zh-TW';
-        u.rate = 1.2;
+        u.rate = 1.0;
+        
+        // 當語音講完時才執行後續動作
+        u.onend = () => { if (callback && !isPaused) callback(); };
+        
+        // 針對部分安卓 Chrome 的保險機制（防止 onend 沒觸發）
+        let timerSafety = setTimeout(() => {
+            if (callback && !isPaused && !synth.speaking) {
+                callback();
+                callback = null;
+            }
+        }, txt.length * 500 + 1000);
+
         synth.speak(u);
     }
 
     function doStart() {
-        if (isPaused) { isPaused = false; document.getElementById('btnPause').innerText = "暫停"; return; }
+        if (isPaused) { 
+            isPaused = false; 
+            document.getElementById('btnPause').innerText = "暫停"; 
+            startInterval();
+            return; 
+        }
         
         secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
         totalSets = parseInt(document.getElementById('setIn').value) || 10;
@@ -58,28 +80,27 @@
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         
-        speak("丹田呼吸," + secPerPhase + "秒," + totalSets + "組練習。三。二。一。");
-        // 延遲 3 秒後強制開始跑秒，不論語音是否播完
-        setTimeout(startPhase, 3000);
+        const intro = `丹田呼吸，${secPerPhase}秒，${totalSets}組練習。三。二。一。`;
+        speak(intro, startPhase); // 語音講完 intro 後才執行 startPhase
     }
 
     function startPhase() {
         if (currentSet > totalSets) { finish(); return; }
-        document.getElementById('setDisp').innerText = "組數: " + currentSet + " / " + totalSets;
+        document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
         
-        if (phase === "inhale") {
-            document.getElementById('st').innerText = "吸氣";
-            document.getElementById('st').style.color = "#2ecc71";
-            speak("吸氣");
-        } else {
-            document.getElementById('st').innerText = "吐氣";
-            document.getElementById('st').style.color = "#e74c3c";
-            speak("吐氣");
-        }
+        const isInhale = (phase === "inhale");
+        document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
+        document.getElementById('st').style.color = isInhale ? "#2ecc71" : "#e74c3c";
         
-        updateTm();
-        clearInterval(timer);
+        speak(isInhale ? "吸氣" : "吐氣", () => {
+            updateTm();
+            startInterval();
+        });
+    }
+
+    function startInterval() {
+        if (timer) clearInterval(timer);
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
@@ -96,12 +117,18 @@
     function doPause() {
         isPaused = !isPaused;
         document.getElementById('btnPause').innerText = isPaused ? "繼續" : "暫停";
-        if (isPaused) { document.getElementById('st').innerText = "已暫停"; synth.cancel(); }
-        else { document.getElementById('st').innerText = (phase === "inhale" ? "吸氣" : "吐氣"); }
+        if (isPaused) {
+            clearInterval(timer);
+            synth.cancel();
+            document.getElementById('st').innerText = "已暫停";
+        } else {
+            document.getElementById('st').innerText = (phase === "inhale" ? "吸氣" : "吐氣");
+        }
     }
 
     function doStop() {
-        clearInterval(timer); synth.cancel();
+        clearInterval(timer);
+        synth.cancel();
         isPaused = false;
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
@@ -111,10 +138,18 @@
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnStop').style.display = 'none';
         document.getElementById('btnPause').innerText = "暫停";
+        document.getElementById('setDisp').innerText = "組數: 0 / 0";
     }
 
-    function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
-    function finish() { speak("練習結束"); doStop(); }
+    function updateTm() { 
+        document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; 
+    }
+
+    function finish() { 
+        speak("練習完成", () => {
+            setTimeout(doStop, 1500);
+        });
+    }
 </script>
 </body>
 </html>
