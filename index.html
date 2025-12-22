@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v1.1</title>
+    <title>AI 丹田呼吸 v1.2</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; overflow: hidden; }
         .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
@@ -27,7 +27,7 @@
     <div class="box">
         <div id="setup" class="settings">
             <div class="input-group"><label>秒數</label><input type="number" id="secIn" value="15"></div>
-            <div class="input-group"><label>組數</label><input type="number" id="setIn" value="10"></div>
+            <div class="input-group"><label>總組數</label><input type="number" id="setIn" value="10"></div>
         </div>
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
@@ -38,7 +38,7 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
-    <div class="version-tag">v1.1</div>
+    <div class="version-tag">v1.2</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -88,9 +88,15 @@
         document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
         timeLeft = secPerPhase;
         const isInhale = (phase === "inhale");
+        const statusEl = document.getElementById('st');
         
-        document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
-        document.getElementById('st').style.color = isInhale ? "#2ecc71" : "#e74c3c";
+        if (isInhale) {
+            statusEl.innerText = "吸氣";
+            statusEl.style.color = "#2ecc71"; // 綠色
+        } else {
+            statusEl.innerText = "吐氣";
+            statusEl.style.color = "#0000ff"; // 藍色
+        }
         
         speak(isInhale ? "吸氣" : "吐氣", () => {
             updateTm();
@@ -119,17 +125,24 @@
         
         isPaused = !isPaused;
         const btnPause = document.getElementById('btnPause');
+        const statusEl = document.getElementById('st');
         
         if (isPaused) {
             clearInterval(timer);
             synth.cancel();
             lastSpokenText = ""; 
             btnPause.innerText = "繼續";
-            document.getElementById('st').innerText = "已暫停";
+            statusEl.innerText = "已暫停";
+            statusEl.style.color = "#0000ff"; // 暫停改為藍色
         } else {
             btnPause.innerText = "暫停";
-            document.getElementById('st').innerText = (phase === "inhale" ? "吸氣" : "吐氣");
-            // 繼續時：不等待語音，直接啟動計時
+            if (phase === "inhale") {
+                statusEl.innerText = "吸氣";
+                statusEl.style.color = "#2ecc71";
+            } else {
+                statusEl.innerText = "吐氣";
+                statusEl.style.color = "#0000ff";
+            }
             updateTm();
             startInterval();
         }
