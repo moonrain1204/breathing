@@ -124,4 +124,61 @@
     }
 
     function startCycle(phase) {
-        if (isPaused
+        if (isPaused) return;
+        if (currentSet > targetSets) {
+            finish();
+            return;
+        }
+
+        currentPhase = phase;
+        updateSetDisplay();
+        
+        if (phase === "inhale") {
+            document.getElementById('body').className = "inhaling";
+            document.getElementById('st').innerText = "吸氣";
+            speak("吸氣", () => runTimer(targetSec, "exhale"));
+        } else {
+            document.getElementById('body').className = "exhaling";
+            document.getElementById('st').innerText = "吐氣";
+            speak("吐氣", () => runTimer(targetSec, "next"));
+        }
+    }
+
+    function runTimer(seconds, nextStep) {
+        timeLeft = seconds;
+        updateTimerDisplay();
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (isPaused) return;
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (nextStep === "exhale") {
+                    startCycle("exhale");
+                } else {
+                    currentSet++;
+                    startCycle("inhale");
+                }
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        document.getElementById('tm').innerText = timeLeft < 10 ? '0' + timeLeft : timeLeft;
+    }
+
+    function updateSetDisplay() {
+        document.getElementById('setsDisplay').innerText = `組數: ${currentSet} / ${targetSets}`;
+    }
+
+    function finish() {
+        document.getElementById('st').innerText = "完成";
+        speak("練習結束");
+        setTimeout(handleStop, 3000);
+    }
+</script>
+</body>
+</html>
