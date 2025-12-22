@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 V8</title>
+    <title>AI 丹田呼吸 V9</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; touch-action: manipulation; }
-        .container { background: white; padding: 30px 20px; border-radius: 25px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .settings { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 10px; }
+        .container { background: white; padding: 25px 15px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .settings { display: flex; justify-content: space-around; margin-bottom: 15px; gap: 10px; }
         .input-group { display: flex; flex-direction: column; flex: 1; }
-        .input-group label { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; }
-        input[type="number"] { padding: 12px; font-size: 1.2rem; border: 2px solid #ecf0f1; border-radius: 12px; text-align: center; width: 100%; box-sizing: border-box; }
-        .status { font-size: 2.5rem; font-weight: bold; color: #3498db; min-height: 3.5rem; margin-top: 10px; }
-        .timer { font-size: 5.5rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
-        .sets-info { font-size: 1.1rem; color: #95a5a6; margin-bottom: 25px; }
-        .controls { display: flex; gap: 10px; flex-direction: column; }
-        button { border: none; padding: 18px; font-size: 1.3rem; border-radius: 50px; cursor: pointer; transition: all 0.2s; font-weight: bold; width: 100%; }
-        #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        .input-group label { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px; }
+        input[type="number"] { padding: 10px; font-size: 1.1rem; border: 2px solid #ecf0f1; border-radius: 10px; text-align: center; width: 100%; box-sizing: border-box; }
+        .status { font-size: 2.2rem; font-weight: bold; color: #3498db; min-height: 3rem; margin-top: 5px; }
+        .timer { font-size: 5rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
+        .sets-info { font-size: 1rem; color: #95a5a6; margin-bottom: 20px; }
+        .controls { display: flex; gap: 8px; flex-direction: column; }
+        button { border: none; padding: 16px; font-size: 1.2rem; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; -webkit-appearance: none; }
+        #btnStart { background: #2ecc71; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
-        #btnStop { background: #e74c3c; color: white; margin-top: 5px; display: none; }
-        button:active { transform: scale(0.96); opacity: 0.9; }
+        #btnStop { background: #e74c3c; color: white; display: none; margin-top: 5px; }
         .inhaling .status { color: #2ecc71; }
         .exhaling .status { color: #e74c3c; }
     </style>
@@ -27,7 +26,7 @@
 <body id="body">
 
 <div class="container">
-    <div class="settings" id="setup">
+    <div id="setup" class="settings">
         <div class="input-group">
             <label>每段秒數</label>
             <input type="number" id="secInput" value="15">
@@ -43,34 +42,32 @@
     <div class="sets-info" id="setsDisplay">組數: 0 / 0</div>
 
     <div class="controls">
-        <button id="btnStart" onclick="handleStart()">開始練習</button>
-        <button id="btnPause" onclick="handlePause()">暫停</button>
-        <button id="btnStop" onclick="handleStop()">停止重設</button>
+        <button id="btnStart">開始練習</button>
+        <button id="btnPause">暫停</button>
+        <button id="btnStop">停止重設</button>
     </div>
 </div>
 
 <script>
     let timerInterval = null;
     let isPaused = false;
-    let currentSet = 1;
-    let targetSets = 10;
-    let targetSec = 15;
-    let timeLeft = 0;
-    let currentPhase = ""; // inhale, exhale
+    let currentSet = 1, targetSets = 10, targetSec = 15, timeLeft = 0;
+    let currentPhase = "";
     const synth = window.speechSynthesis;
+
+    // 手機版按鈕綁定優化
+    document.getElementById('btnStart').onclick = handleStart;
+    document.getElementById('btnPause').onclick = handlePause;
+    document.getElementById('btnStop').onclick = handleStop;
 
     function speak(text, callback) {
         synth.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = 'zh-TW';
-        u.rate = 1.1;
+        u.rate = 1.0;
         u.onend = () => { if (callback && !isPaused) callback(); };
         synth.speak(u);
-        
-        // 保險機制
-        setTimeout(() => {
-            if (callback && !isPaused && synth.speaking === false) callback();
-        }, 2000);
+        setTimeout(() => { if (callback && !isPaused && !synth.speaking) callback(); }, 2500);
     }
 
     function handleStart() {
@@ -81,19 +78,17 @@
             return;
         }
 
-        targetSec = parseInt(document.getElementById('secInput').value);
-        targetSets = parseInt(document.getElementById('setInput').value);
+        targetSec = parseInt(document.getElementById('secInput').value) || 15;
+        targetSets = parseInt(document.getElementById('setInput').value) || 10;
         currentSet = 1;
         
-        // 介面切換
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         
-        updateSetDisplay();
-        const intro = `丹田呼吸，${targetSec}秒，${targetSets}組。3。2。1。`;
-        speak(intro, () => startCycle("inhale"));
+        updateSetUI();
+        speak(`丹田呼吸，${targetSec}秒，${targetSets}組。三。二。一。`, () => startCycle("inhale"));
     }
 
     function handlePause() {
@@ -124,60 +119,39 @@
     }
 
     function startCycle(phase) {
-        if (isPaused) return;
-        if (currentSet > targetSets) {
-            finish();
-            return;
-        }
-
+        if (isPaused || currentSet > targetSets) { if(currentSet > targetSets) finish(); return; }
         currentPhase = phase;
-        updateSetDisplay();
-        
-        if (phase === "inhale") {
-            document.getElementById('body').className = "inhaling";
-            document.getElementById('st').innerText = "吸氣";
-            speak("吸氣", () => runTimer(targetSec, "exhale"));
-        } else {
-            document.getElementById('body').className = "exhaling";
-            document.getElementById('st').innerText = "吐氣";
-            speak("吐氣", () => runTimer(targetSec, "next"));
-        }
+        updateSetUI();
+        const isInhale = phase === "inhale";
+        document.getElementById('body').className = isInhale ? "inhaling" : "exhaling";
+        document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
+        speak(isInhale ? "吸氣" : "吐氣", () => runTimer(targetSec, isInhale ? "exhale" : "next"));
     }
 
     function runTimer(seconds, nextStep) {
         timeLeft = seconds;
-        updateTimerDisplay();
-        
+        document.getElementById('tm').innerText = timeLeft < 10 ? '0' + timeLeft : timeLeft;
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             if (isPaused) return;
             timeLeft--;
-            updateTimerDisplay();
-            
+            document.getElementById('tm').innerText = timeLeft < 10 ? '0' + timeLeft : timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                if (nextStep === "exhale") {
-                    startCycle("exhale");
-                } else {
-                    currentSet++;
-                    startCycle("inhale");
-                }
+                if (nextStep === "exhale") startCycle("exhale");
+                else { currentSet++; startCycle("inhale"); }
             }
         }, 1000);
     }
 
-    function updateTimerDisplay() {
-        document.getElementById('tm').innerText = timeLeft < 10 ? '0' + timeLeft : timeLeft;
-    }
-
-    function updateSetDisplay() {
+    function updateSetUI() {
         document.getElementById('setsDisplay').innerText = `組數: ${currentSet} / ${targetSets}`;
     }
 
     function finish() {
         document.getElementById('st').innerText = "完成";
         speak("練習結束");
-        setTimeout(handleStop, 3000);
+        setTimeout(handleStop, 2000);
     }
 </script>
 </body>
