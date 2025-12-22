@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 V15</title>
+    <title>AI 丹田呼吸 v1.0</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; }
         .box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .settings { display: flex; gap: 10px; margin-bottom: 20px; }
         .input-group { flex: 1; display: flex; flex-direction: column; }
@@ -20,6 +20,15 @@
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
         button:active { transform: scale(0.96); opacity: 0.9; }
+        
+        /* 左下角版本標註 */
+        .version-tag {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: #bdc3c7;
+        }
     </style>
 </head>
 <body>
@@ -38,14 +47,15 @@
         </div>
     </div>
 
+    <div class="version-tag">v1.0</div>
+
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
     let isPaused = false, isPracticeRunning = false, phase = "inhale";
-    let lastSpokenText = ""; // 用於防止重複發言
+    let lastSpokenText = ""; 
     const synth = window.speechSynthesis;
 
     function speak(txt, callback) {
-        // 防止同一個詞在短時間內被重複朗讀
         if (txt === lastSpokenText) return; 
         lastSpokenText = txt;
         
@@ -54,7 +64,7 @@
         u.lang = 'zh-TW';
         u.rate = 1.0;
         u.onend = () => {
-            lastSpokenText = ""; // 朗讀完畢重置，允許下一句
+            lastSpokenText = ""; 
             if (callback && !isPaused) callback(); 
         };
         synth.speak(u);
@@ -95,7 +105,6 @@
         document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
         document.getElementById('st').style.color = isInhale ? "#2ecc71" : "#e74c3c";
         
-        // 確保吸氣或吐氣只會觸發一次語音
         speak(isInhale ? "吸氣" : "吐氣", () => {
             updateTm();
             startInterval();
