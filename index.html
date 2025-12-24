@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v2.7</title>
+    <title>AI 丹田呼吸 v2.8</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 2vh; }
         .box { background: white; padding: 20px 20px; border-radius: 25px; text-align: center; width: 88%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -38,7 +38,7 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v2.7</div>
+    <div class="version-tag">v2.8</div>
 
 <script>
     let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
@@ -48,10 +48,12 @@
 
     function speakImmediate(txt) {
         synth.cancel();
-        const u = new SpeechSynthesisUtterance(txt);
-        u.lang = 'zh-TW';
-        u.rate = 1.2;
-        synth.speak(u);
+        setTimeout(() => {
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang = 'zh-TW';
+            u.rate = 1.2;
+            synth.speak(u);
+        }, 50); // 加入微小延遲確保 cancel 執行完畢
     }
 
     function doStart() {
@@ -100,7 +102,12 @@
 
     function startPhase(isNewPhase) {
         if (!isPracticeRunning || isPaused) return;
-        if (currentSet > totalSets) { finish(); return; }
+        
+        // 檢查是否已達總組數：如果是吐氣結束後要切換下一組吸氣，但已超過總組數
+        if (currentSet > totalSets) { 
+            finish(); 
+            return; 
+        }
         
         if (isNewPhase) timeLeft = secPerPhase;
 
@@ -123,8 +130,13 @@
                 timeLeft--;
                 if (timeLeft < 0) {
                     clearInterval(timer);
-                    phase = (phase === "inhale") ? "exhale" : "inhale";
-                    if (phase === "inhale") currentSet++;
+                    // 邏輯關鍵：吐氣完才算一組結束
+                    if (phase === "exhale") {
+                        currentSet++;
+                        phase = "inhale";
+                    } else {
+                        phase = "exhale";
+                    }
                     startPhase(true);
                 } else {
                     updateTm();
@@ -166,20 +178,27 @@
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnPause').innerText = "暫停";
         document.getElementById('btnStop').style.display = 'none';
+        document.getElementById('setDisp').innerText = "組數: 0 / 0";
     }
 
     function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
 
     function finish() { 
-        isPracticeRunning = false; 
         if (timer) clearInterval(timer);
+        isPracticeRunning = false; 
         
         const stEl = document.getElementById('st');
         stEl.innerText = "停";
-        stEl.style.color = "#2c3e50"; // 深灰色收尾
+        stEl.style.color = "#2c3e50"; 
+        document.getElementById('tm').innerText = "00";
         
+        // 確保立刻發聲
         speakImmediate("停"); 
-        setTimeout(doStop, 1500); 
+        
+        // 稍微拉長顯示時間，讓使用者看到「停」字
+        setTimeout(() => {
+            if (!isPracticeRunning) doStop();
+        }, 2500); 
     }
 </script>
 </body>
