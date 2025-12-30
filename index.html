@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.6</title>
+    <title>AI 丹田呼吸 v3.7</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -46,7 +46,7 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.6</div>
+    <div class="version-tag">v3.7</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -66,9 +66,7 @@
                 activePhases++;
             }
         }
-        // 加上休息時間 (每組間隔 60秒)
         if (activePhases > 1) totalSec += (activePhases - 1) * 60;
-        
         const mm = Math.floor(totalSec / 60), ss = totalSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
         document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
@@ -79,11 +77,12 @@
     }
     window.onload = calcInfo;
 
-    function speakImmediate(txt) {
+    function speakImmediate(txt, callback) {
         synth.cancel();
         setTimeout(() => {
             const u = new SpeechSynthesisUtterance(txt);
             u.lang = 'zh-TW'; u.rate = 1.2;
+            if(callback) u.onend = callback;
             synth.speak(u);
         }, 50);
     }
@@ -105,27 +104,34 @@
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         calcInfo();
-        speakImmediate("練習開始");
-        setTimeout(startCountdown, 2000);
+        
+        startCountdown();
     }
 
     function startCountdown() {
         if (!isPracticeRunning) return;
-        const st = document.getElementById('st'), tm = document.getElementById('tm');
+        const config = phasesConfig[currentPhaseIdx];
+        const st = document.getElementById('st');
         st.innerText = "準備開始";
         st.style.color = "#3498db";
-        let count = 3;
-        const countTimer = setInterval(() => {
-            if (isPaused) { clearInterval(countTimer); return; }
-            if (count > 0) {
-                tm.innerText = "0" + count;
-                speakImmediate(count.toString());
-                count--;
-            } else {
-                clearInterval(countTimer);
-                startPhaseStep();
-            }
-        }, 1000);
+
+        // 播報開場語：丹田呼吸幾秒幾組練習
+        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
+            // 播報完後開始 3-2-1
+            let count = 3;
+            const tm = document.getElementById('tm');
+            const countTimer = setInterval(() => {
+                if (isPaused) { clearInterval(countTimer); return; }
+                if (count > 0) {
+                    tm.innerText = "0" + count;
+                    speakImmediate(count.toString());
+                    count--;
+                } else {
+                    clearInterval(countTimer);
+                    startPhaseStep();
+                }
+            }, 1000);
+        });
     }
 
     function startPhaseStep() {
@@ -158,7 +164,7 @@
                 if (timeLeft < 0) {
                     clearInterval(timer);
                     if (isResting) {
-                        startCountdown(); // 休息完進入倒數
+                        startCountdown(); 
                     } else {
                         if (phase === "exhale") { currentSet++; phase = "inhale"; } 
                         else { phase = "exhale"; }
@@ -181,7 +187,6 @@
         phase = "inhale";
 
         if (currentPhaseIdx < phasesConfig.length) {
-            // 進入 60 秒休息調息
             setTimeout(() => {
                 if (!isPracticeRunning) return;
                 isResting = true;
@@ -192,7 +197,6 @@
                 startTimerLogic();
             }, 1500);
         } else {
-            // 全部結束
             setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
         }
     }
@@ -205,7 +209,7 @@
             btn.innerText = "繼續"; 
         } else { 
             bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
-            if (isResting || st.innerText === "準備開始") startTimerLogic();
+            if (isResting || st.innerText === "準備開始" || st.innerText === "休息調息") startTimerLogic();
             else startPhaseStep();
         }
     }
