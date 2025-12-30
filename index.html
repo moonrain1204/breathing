@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.8</title>
+    <title>AI 丹田呼吸 v3.9</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -21,6 +21,7 @@
         button { width: 100%; padding: 14px; font-size: 1.3rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         #btnStart { background: #2ecc71; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
+        #btnSkipRest { background: #3498db; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
         .version-tag { position: fixed; bottom: 8px; left: 10px; font-size: 11px; color: #bdc3c7; }
     </style>
@@ -42,11 +43,12 @@
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
+            <button id="btnSkipRest" onclick="doSkipRest()">略過休息</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.8</div>
+    <div class="version-tag">v3.9</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -109,6 +111,7 @@
 
     function startCountdown() {
         if (!isPracticeRunning) return;
+        document.getElementById('btnSkipRest').style.display = 'none'; // 倒數時隱藏略過
         const config = phasesConfig[currentPhaseIdx];
         const st = document.getElementById('st');
         st.innerText = "準備開始";
@@ -137,6 +140,7 @@
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
 
         isResting = false;
+        document.getElementById('btnSkipRest').style.display = 'none';
         timeLeft = config.sec;
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
@@ -186,11 +190,20 @@
                 timeLeft = 60;
                 document.getElementById('st').innerText = "休息調息";
                 document.getElementById('st').style.color = "#95a5a6";
+                document.getElementById('btnSkipRest').style.display = 'block'; // 休息時顯示按鈕
                 updateTm();
                 startTimerLogic();
             }, 1500);
         } else {
             setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
+        }
+    }
+
+    function doSkipRest() {
+        if (isResting) {
+            clearInterval(timer);
+            timeLeft = 0;
+            startCountdown();
         }
     }
 
@@ -210,6 +223,7 @@
     function doStop() {
         clearInterval(timer); synth.cancel(); bgAudio.pause();
         isPaused = false; isPracticeRunning = false; isResting = false;
+        document.getElementById('btnSkipRest').style.display = 'none';
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
