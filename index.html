@@ -3,44 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.0</title>
+    <title>AI 丹田呼吸 v3.6</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 2vh; }
-        .box { background: white; padding: 20px 20px; border-radius: 25px; text-align: center; width: 88%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
-        .settings { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .input-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
-        .input-group label { font-size: 1.2rem; color: #2c3e50; font-weight: bold; margin-bottom: 5px; }
-        input { width: 85%; padding: 10px; border-radius: 12px; border: 3px solid #ecf0f1; text-align: center; font-size: 1.6rem; font-weight: bold; color: #34495e; box-sizing: border-box; }
-        .status { font-size: 4rem; font-weight: bold; color: #3498db; min-height: 6rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; white-space: pre-line; }
-        .timer { font-size: 6rem; font-weight: bold; margin: 5px 0; font-variant-numeric: tabular-nums; }
-        
-        /* 資訊列：組數、共計、結束時間三位一體 */
-        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin-bottom: 15px; font-size: 1rem; width: 100%; }
-        .info-item { flex: 1; white-space: nowrap; }
-        
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
+        .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
+        .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8f9fa; padding: 8px 12px; border-radius: 15px; }
+        .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; width: 55px; text-align: left; }
+        .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
+        .input-group label { font-size: 0.8rem; color: #2c3e50; font-weight: bold; white-space: nowrap; }
+        input { width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; }
+        .status { font-size: 3.5rem; font-weight: bold; color: #3498db; min-height: 5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; }
+        .timer { font-size: 5.5rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; }
+        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 10px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 10px; }
+        .info-item { flex: 1; text-align: center; }
         .controls { display: flex; flex-direction: column; gap: 8px; }
-        button { width: 100%; padding: 16px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
-        #btnStart { background: #2ecc71; color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+        button { width: 100%; padding: 14px; font-size: 1.3rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        #btnStart { background: #2ecc71; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
-        .version-tag { position: fixed; bottom: 8px; left: 10px; font-size: 11px; color: #bdc3c7; z-index: 999; pointer-events: none; }
+        .version-tag { position: fixed; bottom: 8px; left: 10px; font-size: 11px; color: #bdc3c7; }
     </style>
 </head>
 <body>
     <div class="box">
         <div id="setup" class="settings">
-            <div class="input-group"><label>秒數</label><input type="number" id="secIn" value="15" oninput="calcInfo()"></div>
-            <div class="input-group"><label>總組數</label><input type="number" id="setIn" value="10" oninput="calcInfo()"></div>
+            <div class="phase-row"><div class="phase-label">第一組</div><div class="input-group"><label>秒</label><input type="number" id="s1" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g1" value="10" oninput="calcInfo()"></div></div>
+            <div class="phase-row"><div class="phase-label">第二組</div><div class="input-group"><label>秒</label><input type="number" id="s2" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g2" value="0" oninput="calcInfo()"></div></div>
+            <div class="phase-row"><div class="phase-label">第三組</div><div class="input-group"><label>秒</label><input type="number" id="s3" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g3" value="0" oninput="calcInfo()"></div></div>
         </div>
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
-        
         <div class="info-bar">
-            <div class="info-item" id="setDisp">組數: 0 / 10</div>
-            <div class="info-item" id="totalTimeDisp">共計: 05:00</div>
+            <div class="info-item" id="setDisp">組數: 0 / 0</div>
+            <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
             <div class="info-item" id="endTimeDisp">結束: --:--</div>
         </div>
-
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
@@ -48,38 +46,37 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.0</div>
+    <div class="version-tag">v3.6</div>
 
 <script>
-    let timer = null, timeLeft = 0, currentSet = 1, totalSets = 10, secPerPhase = 15;
-    let isPaused = false, isPracticeRunning = false, phase = "inhale";
+    let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
+    let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false;
+    let phasesConfig = []; 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
-    // 核心計算：組數、共計、預計結束
     function calcInfo() {
-        const s = parseInt(document.getElementById('secIn').value) || 0;
-        const g = parseInt(document.getElementById('setIn').value) || 0;
-        const totalSec = s * 2 * g;
+        let totalSec = 0, totalSets = 0, activePhases = 0;
+        for(let i=1; i<=3; i++) {
+            const s = parseInt(document.getElementById('s'+i).value) || 0;
+            const g = parseInt(document.getElementById('g'+i).value) || 0;
+            if (g > 0) {
+                totalSec += (s * 2 * g);
+                totalSets += g;
+                activePhases++;
+            }
+        }
+        // 加上休息時間 (每組間隔 60秒)
+        if (activePhases > 1) totalSec += (activePhases - 1) * 60;
         
-        // 1. 更新組數顯示
-        document.getElementById('setDisp').innerText = `組數: ${isPracticeRunning ? currentSet-1 : 0} / ${g}`;
-        
-        // 2. 更新共計時長
-        const mm = Math.floor(totalSec / 60);
-        const ss = totalSec % 60;
+        const mm = Math.floor(totalSec / 60), ss = totalSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        
-        // 3. 更新預計結束時間
+        document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         const now = new Date();
-        // 加上總時長 + 3秒倒數
-        const endTimestamp = now.getTime() + (totalSec * 1000) + 3000; 
-        const endDate = new Date(endTimestamp);
-        const endH = endDate.getHours();
-        const endM = endDate.getMinutes();
+        const endDate = new Date(now.getTime() + (totalSec * 1000) + 3000);
+        const endH = endDate.getHours(), endM = endDate.getMinutes();
         document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
     }
-
     window.onload = calcInfo;
 
     function speakImmediate(txt) {
@@ -92,37 +89,31 @@
     }
 
     function doStart() {
-        if (!isPracticeRunning) {
-            bgAudio.play().catch(() => {});
-            secPerPhase = parseInt(document.getElementById('secIn').value) || 15;
-            totalSets = parseInt(document.getElementById('setIn').value) || 10;
-            currentSet = 1; phase = "inhale";
-            isPracticeRunning = true; isPaused = false;
-            
-            // 開始時重新計算一次確切結束時間
-            calcInfo();
-            
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('btnStart').style.display = 'none';
-            document.getElementById('btnPause').style.display = 'block';
-            document.getElementById('btnStop').style.display = 'block';
-            
-            const st = document.getElementById('st');
-            st.style.fontSize = "1.8rem";
-            st.innerText = `丹田呼吸：${secPerPhase}秒\n${totalSets}組練習`;
-            
-            const intro = new SpeechSynthesisUtterance(`丹田呼吸，${secPerPhase}秒，${totalSets}組練習。`);
-            intro.lang = 'zh-TW';
-            intro.onend = startCountdown;
-            synth.speak(intro);
+        if (isPracticeRunning) return;
+        phasesConfig = [];
+        for(let i=1; i<=3; i++) {
+            const s = parseInt(document.getElementById('s'+i).value) || 0;
+            const g = parseInt(document.getElementById('g'+i).value) || 0;
+            if (g > 0) phasesConfig.push({ sec: s, sets: g, id: i });
         }
+        if (phasesConfig.length === 0) return;
+        bgAudio.play().catch(() => {});
+        currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
+        isPracticeRunning = true; isPaused = false;
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnPause').style.display = 'block';
+        document.getElementById('btnStop').style.display = 'block';
+        calcInfo();
+        speakImmediate("練習開始");
+        setTimeout(startCountdown, 2000);
     }
 
     function startCountdown() {
-        if (!isPracticeRunning || isPaused) return;
-        const st = document.getElementById('st');
-        const tm = document.getElementById('tm');
-        st.style.fontSize = "4rem"; st.innerText = "倒數計時";
+        if (!isPracticeRunning) return;
+        const st = document.getElementById('st'), tm = document.getElementById('tm');
+        st.innerText = "準備開始";
+        st.style.color = "#3498db";
         let count = 3;
         const countTimer = setInterval(() => {
             if (isPaused) { clearInterval(countTimer); return; }
@@ -132,61 +123,96 @@
                 count--;
             } else {
                 clearInterval(countTimer);
-                startPhase(true); 
+                startPhaseStep();
             }
         }, 1000);
     }
 
-    function startPhase(isNewPhase) {
+    function startPhaseStep() {
         if (!isPracticeRunning || isPaused) return;
-        if (currentSet > totalSets) { finish(); return; }
-        if (isNewPhase) timeLeft = secPerPhase;
-        document.getElementById('setDisp').innerText = `組數: ${currentSet} / ${totalSets}`;
+        const config = phasesConfig[currentPhaseIdx];
+
+        if (currentSet > config.sets) {
+            triggerPhaseEnd();
+            return;
+        }
+
+        isResting = false;
+        timeLeft = config.sec;
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
-        if (isNewPhase) speakImmediate(isInhale ? "吸氣" : "吐氣");
+        document.getElementById('setDisp').innerText = `階 ${config.id}: ${currentSet}/${config.sets}`;
+        speakImmediate(isInhale ? "吸氣" : "吐氣");
+        
         updateTm();
-        startInterval();
+        startTimerLogic();
     }
 
-    function startInterval() {
+    function startTimerLogic() {
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
                 if (timeLeft < 0) {
                     clearInterval(timer);
-                    if (phase === "exhale") { currentSet++; phase = "inhale"; } 
-                    else { phase = "exhale"; }
-                    startPhase(true);
+                    if (isResting) {
+                        startCountdown(); // 休息完進入倒數
+                    } else {
+                        if (phase === "exhale") { currentSet++; phase = "inhale"; } 
+                        else { phase = "exhale"; }
+                        startPhaseStep();
+                    }
                 } else { updateTm(); }
             }
         }, 1000);
     }
 
+    function triggerPhaseEnd() {
+        if (timer) clearInterval(timer);
+        speakImmediate("停");
+        document.getElementById('st').innerText = "停";
+        document.getElementById('st').style.color = "#2c3e50";
+        document.getElementById('tm').innerText = "00";
+
+        currentPhaseIdx++;
+        currentSet = 1;
+        phase = "inhale";
+
+        if (currentPhaseIdx < phasesConfig.length) {
+            // 進入 60 秒休息調息
+            setTimeout(() => {
+                if (!isPracticeRunning) return;
+                isResting = true;
+                timeLeft = 60;
+                document.getElementById('st').innerText = "休息調息";
+                document.getElementById('st').style.color = "#95a5a6";
+                updateTm();
+                startTimerLogic();
+            }, 1500);
+        } else {
+            // 全部結束
+            setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
+        }
+    }
+
     function doPause() {
-        if (!isPracticeRunning) return;
         isPaused = !isPaused;
-        const btnPause = document.getElementById('btnPause');
-        const stEl = document.getElementById('st');
+        const btn = document.getElementById('btnPause'), st = document.getElementById('st');
         if (isPaused) { 
             clearInterval(timer); synth.cancel(); bgAudio.pause(); 
-            btnPause.innerText = "繼續"; stEl.innerText = "已暫停";
+            btn.innerText = "繼續"; 
         } else { 
-            bgAudio.play().catch(() => {});
-            btnPause.innerText = "暫停";
-            // 恢復時更新一次預計結束時間
-            calcInfo();
-            startPhase(false); 
+            bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
+            if (isResting || st.innerText === "準備開始") startTimerLogic();
+            else startPhaseStep();
         }
     }
 
     function doStop() {
-        if (timer) clearInterval(timer);
-        synth.cancel(); bgAudio.pause();
-        isPaused = false; isPracticeRunning = false;
+        clearInterval(timer); synth.cancel(); bgAudio.pause();
+        isPaused = false; isPracticeRunning = false; isResting = false;
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
@@ -196,18 +222,7 @@
         document.getElementById('btnStop').style.display = 'none';
         calcInfo();
     }
-
     function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
-
-    function finish() { 
-        if (timer) clearInterval(timer);
-        isPracticeRunning = false; 
-        const stEl = document.getElementById('st');
-        stEl.innerText = "停"; stEl.style.color = "#2c3e50"; 
-        document.getElementById('tm').innerText = "00";
-        speakImmediate("停"); 
-        setTimeout(() => { if (!isPracticeRunning) doStop(); }, 2500); 
-    }
 </script>
 </body>
 </html>
