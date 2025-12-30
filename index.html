@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.7</title>
+    <title>AI 丹田呼吸 v3.8</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -28,9 +28,9 @@
 <body>
     <div class="box">
         <div id="setup" class="settings">
-            <div class="phase-row"><div class="phase-label">第一組</div><div class="input-group"><label>秒</label><input type="number" id="s1" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g1" value="10" oninput="calcInfo()"></div></div>
-            <div class="phase-row"><div class="phase-label">第二組</div><div class="input-group"><label>秒</label><input type="number" id="s2" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g2" value="0" oninput="calcInfo()"></div></div>
-            <div class="phase-row"><div class="phase-label">第三組</div><div class="input-group"><label>秒</label><input type="number" id="s3" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g3" value="0" oninput="calcInfo()"></div></div>
+            <div class="phase-row"><div class="phase-label">第一組</div><div class="input-group"><label>秒</label><input type="number" id="s1" value="13" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g1" value="10" oninput="calcInfo()"></div></div>
+            <div class="phase-row"><div class="phase-label">第二組</div><div class="input-group"><label>秒</label><input type="number" id="s2" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g2" value="10" oninput="calcInfo()"></div></div>
+            <div class="phase-row"><div class="phase-label">第三組</div><div class="input-group"><label>秒</label><input type="number" id="s3" value="16" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g3" value="15" oninput="calcInfo()"></div></div>
         </div>
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
@@ -46,7 +46,7 @@
         </div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.7</div>
+    <div class="version-tag">v3.8</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -104,7 +104,6 @@
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         calcInfo();
-        
         startCountdown();
     }
 
@@ -115,9 +114,7 @@
         st.innerText = "準備開始";
         st.style.color = "#3498db";
 
-        // 播報開場語：丹田呼吸幾秒幾組練習
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
-            // 播報完後開始 3-2-1
             let count = 3;
             const tm = document.getElementById('tm');
             const countTimer = setInterval(() => {
@@ -137,11 +134,7 @@
     function startPhaseStep() {
         if (!isPracticeRunning || isPaused) return;
         const config = phasesConfig[currentPhaseIdx];
-
-        if (currentSet > config.sets) {
-            triggerPhaseEnd();
-            return;
-        }
+        if (currentSet > config.sets) { triggerPhaseEnd(); return; }
 
         isResting = false;
         timeLeft = config.sec;
