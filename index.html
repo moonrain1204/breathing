@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.9</title>
+    <title>AI 丹田呼吸 v3.9.1</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-        .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f8f9fa; padding: 8px 12px; border-radius: 15px; }
-        .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; width: 55px; text-align: left; }
+        .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
+        .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 45px; text-align: left; }
+        
+        /* 調整輸入群組：框在左，字在右 */
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
-        .input-group label { font-size: 0.8rem; color: #2c3e50; font-weight: bold; white-space: nowrap; }
-        input { width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; }
+        .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } /* order 2 讓標籤排在後方 */
+        input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } /* order 1 讓輸入框排在前方 */
+
         .status { font-size: 3.5rem; font-weight: bold; color: #3498db; min-height: 5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; }
         .timer { font-size: 5.5rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; }
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 10px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 10px; }
@@ -29,17 +32,32 @@
 <body>
     <div class="box">
         <div id="setup" class="settings">
-            <div class="phase-row"><div class="phase-label">第一組</div><div class="input-group"><label>秒</label><input type="number" id="s1" value="13" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g1" value="10" oninput="calcInfo()"></div></div>
-            <div class="phase-row"><div class="phase-label">第二組</div><div class="input-group"><label>秒</label><input type="number" id="s2" value="15" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g2" value="10" oninput="calcInfo()"></div></div>
-            <div class="phase-row"><div class="phase-label">第三組</div><div class="input-group"><label>秒</label><input type="number" id="s3" value="16" oninput="calcInfo()"></div><div class="input-group"><label>組</label><input type="number" id="g3" value="15" oninput="calcInfo()"></div></div>
+            <div class="phase-row">
+                <div class="phase-label">第一組</div>
+                <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
+                <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+            </div>
+            <div class="phase-row">
+                <div class="phase-label">第二組</div>
+                <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
+                <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
+            </div>
+            <div class="phase-row">
+                <div class="phase-label">第三組</div>
+                <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
+                <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+            </div>
         </div>
+        
         <div class="status" id="st">準備開始</div>
         <div class="timer" id="tm">00</div>
+        
         <div class="info-bar">
             <div class="info-item" id="setDisp">組數: 0 / 0</div>
             <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
             <div class="info-item" id="endTimeDisp">結束: --:--</div>
         </div>
+        
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
@@ -47,8 +65,9 @@
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
+    
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.9</div>
+    <div class="version-tag">v3.9.1</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -111,7 +130,7 @@
 
     function startCountdown() {
         if (!isPracticeRunning) return;
-        document.getElementById('btnSkipRest').style.display = 'none'; // 倒數時隱藏略過
+        document.getElementById('btnSkipRest').style.display = 'none';
         const config = phasesConfig[currentPhaseIdx];
         const st = document.getElementById('st');
         st.innerText = "準備開始";
@@ -145,95 +164,3 @@
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
-        statusEl.style.color = isInhale ? "#008000" : "#0000ff";
-        document.getElementById('setDisp').innerText = `階 ${config.id}: ${currentSet}/${config.sets}`;
-        speakImmediate(isInhale ? "吸氣" : "吐氣");
-        
-        updateTm();
-        startTimerLogic();
-    }
-
-    function startTimerLogic() {
-        if (timer) clearInterval(timer);
-        timer = setInterval(() => {
-            if (!isPaused) {
-                timeLeft--;
-                if (timeLeft < 0) {
-                    clearInterval(timer);
-                    if (isResting) {
-                        startCountdown(); 
-                    } else {
-                        if (phase === "exhale") { currentSet++; phase = "inhale"; } 
-                        else { phase = "exhale"; }
-                        startPhaseStep();
-                    }
-                } else { updateTm(); }
-            }
-        }, 1000);
-    }
-
-    function triggerPhaseEnd() {
-        if (timer) clearInterval(timer);
-        speakImmediate("停");
-        document.getElementById('st').innerText = "停";
-        document.getElementById('st').style.color = "#2c3e50";
-        document.getElementById('tm').innerText = "00";
-
-        currentPhaseIdx++;
-        currentSet = 1;
-        phase = "inhale";
-
-        if (currentPhaseIdx < phasesConfig.length) {
-            setTimeout(() => {
-                if (!isPracticeRunning) return;
-                isResting = true;
-                timeLeft = 60;
-                document.getElementById('st').innerText = "休息調息";
-                document.getElementById('st').style.color = "#95a5a6";
-                document.getElementById('btnSkipRest').style.display = 'block'; // 休息時顯示按鈕
-                updateTm();
-                startTimerLogic();
-            }, 1500);
-        } else {
-            setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
-        }
-    }
-
-    function doSkipRest() {
-        if (isResting) {
-            clearInterval(timer);
-            timeLeft = 0;
-            startCountdown();
-        }
-    }
-
-    function doPause() {
-        isPaused = !isPaused;
-        const btn = document.getElementById('btnPause'), st = document.getElementById('st');
-        if (isPaused) { 
-            clearInterval(timer); synth.cancel(); bgAudio.pause(); 
-            btn.innerText = "繼續"; 
-        } else { 
-            bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
-            if (isResting || st.innerText === "準備開始" || st.innerText === "休息調息") startTimerLogic();
-            else startPhaseStep();
-        }
-    }
-
-    function doStop() {
-        clearInterval(timer); synth.cancel(); bgAudio.pause();
-        isPaused = false; isPracticeRunning = false; isResting = false;
-        document.getElementById('btnSkipRest').style.display = 'none';
-        document.getElementById('tm').innerText = "00";
-        document.getElementById('st').innerText = "準備開始";
-        document.getElementById('st').style.color = "#3498db";
-        document.getElementById('setup').style.display = 'flex';
-        document.getElementById('btnStart').style.display = 'block';
-        document.getElementById('btnPause').style.display = 'none';
-        document.getElementById('btnStop').style.display = 'none';
-        calcInfo();
-    }
-    function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
-</script>
-</body>
-</html>
