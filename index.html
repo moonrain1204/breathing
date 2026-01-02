@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.0</title>
+    <title>AI 丹田呼吸 v4.1</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
         .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 45px; text-align: left; }
-        
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
-
         .status { font-size: 3.5rem; font-weight: bold; color: #3498db; min-height: 5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; }
         .timer { font-size: 5.5rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; }
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 10px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 10px; }
@@ -66,7 +64,7 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.0</div>
+    <div class="version-tag">v4.1</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -75,26 +73,57 @@
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
+    // 計算剩餘/總計時間邏輯
     function calcInfo() {
-        let totalSec = 0, totalSets = 0, activePhases = 0;
-        for(let i=1; i<=3; i++) {
-            const s = parseInt(document.getElementById('s'+i).value) || 0;
-            const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0) {
-                totalSec += (s * 2 * g);
-                totalSets += g;
-                activePhases++;
+        let remainingSec = 0;
+        let totalSets = 0;
+
+        if (!isPracticeRunning) {
+            // 未開始時：計算設定的所有時間
+            let activePhases = 0;
+            for(let i=1; i<=3; i++) {
+                const s = parseInt(document.getElementById('s'+i).value) || 0;
+                const g = parseInt(document.getElementById('g'+i).value) || 0;
+                if (g > 0) {
+                    remainingSec += (s * 2 * g);
+                    totalSets += g;
+                    activePhases++;
+                }
+            }
+            if (activePhases > 1) remainingSec += (activePhases - 1) * 60; // 包含 60s 休息
+            document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
+        } else {
+            // 練習中：精確計算「從現在起」到結束還剩多少秒
+            // 1. 目前這一組剩餘秒數
+            remainingSec += timeLeft; 
+
+            // 2. 目前這一階層還沒做完的組數
+            const config = phasesConfig[currentPhaseIdx];
+            let remainingSetsInCurrentPhase = config.sets - currentSet;
+            if (phase === "inhale" && !isResting) {
+                // 如果在吸氣，這組還有一個吐氣 + 完整的剩餘組數
+                remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
+            } else if (phase === "exhale" && !isResting) {
+                // 如果在吐氣，這組只需加剩餘組數
+                remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
+            }
+
+            // 3. 尚未開始的後續階層
+            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
+                remainingSec += 60; // 休息時間
+                remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
             }
         }
-        if (activePhases > 1) totalSec += (activePhases - 1) * 60;
-        const mm = Math.floor(totalSec / 60), ss = totalSec % 60;
+
+        const mm = Math.floor(remainingSec / 60), ss = remainingSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
+        
         const now = new Date();
-        const endDate = new Date(now.getTime() + (totalSec * 1000) + 3000);
+        const endDate = new Date(now.getTime() + (remainingSec * 1000));
         const endH = endDate.getHours(), endM = endDate.getMinutes();
         document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
     }
+
     window.onload = calcInfo;
 
     function speakImmediate(txt, callback) {
@@ -176,6 +205,7 @@
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
+                calcInfo(); // 每一秒都更新共計與預計結束時間
                 if (timeLeft < 0) {
                     clearInterval(timer);
                     if (isResting) {
@@ -210,6 +240,7 @@
                 document.getElementById('st').style.color = "#95a5a6";
                 document.getElementById('btnSkipRest').style.display = 'block';
                 updateTm();
+                calcInfo();
                 startTimerLogic();
             }, 1500);
         } else {
@@ -221,6 +252,8 @@
         if (isResting) {
             clearInterval(timer);
             timeLeft = 0;
+            // 略過休息後立即重新計算，時間會瞬間縮短並更新結束點
+            calcInfo(); 
             startCountdown();
         }
     }
