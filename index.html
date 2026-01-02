@@ -164,3 +164,95 @@
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
+        statusEl.style.color = isInhale ? "#008000" : "#0000ff";
+        document.getElementById('setDisp').innerText = `階 ${config.id}: ${currentSet}/${config.sets}`;
+        speakImmediate(isInhale ? "吸氣" : "吐氣");
+        
+        updateTm();
+        startTimerLogic();
+    }
+
+    function startTimerLogic() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(() => {
+            if (!isPaused) {
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timer);
+                    if (isResting) {
+                        startCountdown(); 
+                    } else {
+                        if (phase === "exhale") { currentSet++; phase = "inhale"; } 
+                        else { phase = "exhale"; }
+                        startPhaseStep();
+                    }
+                } else { updateTm(); }
+            }
+        }, 1000);
+    }
+
+    function triggerPhaseEnd() {
+        if (timer) clearInterval(timer);
+        speakImmediate("停");
+        document.getElementById('st').innerText = "停";
+        document.getElementById('st').style.color = "#2c3e50";
+        document.getElementById('tm').innerText = "00";
+
+        currentPhaseIdx++;
+        currentSet = 1;
+        phase = "inhale";
+
+        if (currentPhaseIdx < phasesConfig.length) {
+            setTimeout(() => {
+                if (!isPracticeRunning) return;
+                isResting = true;
+                timeLeft = 60;
+                document.getElementById('st').innerText = "休息調息";
+                document.getElementById('st').style.color = "#95a5a6";
+                document.getElementById('btnSkipRest').style.display = 'block';
+                updateTm();
+                startTimerLogic();
+            }, 1500);
+        } else {
+            setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
+        }
+    }
+
+    function doSkipRest() {
+        if (isResting) {
+            clearInterval(timer);
+            timeLeft = 0;
+            startCountdown();
+        }
+    }
+
+    function doPause() {
+        isPaused = !isPaused;
+        const btn = document.getElementById('btnPause'), st = document.getElementById('st');
+        if (isPaused) { 
+            clearInterval(timer); synth.cancel(); bgAudio.pause(); 
+            btn.innerText = "繼續"; 
+        } else { 
+            bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
+            if (isResting || st.innerText === "準備開始" || st.innerText === "休息調息") startTimerLogic();
+            else startPhaseStep();
+        }
+    }
+
+    function doStop() {
+        clearInterval(timer); synth.cancel(); bgAudio.pause();
+        isPaused = false; isPracticeRunning = false; isResting = false;
+        document.getElementById('btnSkipRest').style.display = 'none';
+        document.getElementById('tm').innerText = "00";
+        document.getElementById('st').innerText = "準備開始";
+        document.getElementById('st').style.color = "#3498db";
+        document.getElementById('setup').style.display = 'flex';
+        document.getElementById('btnStart').style.display = 'block';
+        document.getElementById('btnPause').style.display = 'none';
+        document.getElementById('btnStop').style.display = 'none';
+        calcInfo();
+    }
+    function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
+</script>
+</body>
+</html>
