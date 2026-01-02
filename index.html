@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v3.9.1</title>
+    <title>AI 丹田呼吸 v4.0</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -11,10 +11,9 @@
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
         .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 45px; text-align: left; }
         
-        /* 調整輸入群組：框在左，字在右 */
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
-        .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } /* order 2 讓標籤排在後方 */
-        input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } /* order 1 讓輸入框排在前方 */
+        .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
+        input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
 
         .status { font-size: 3.5rem; font-weight: bold; color: #3498db; min-height: 5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; }
         .timer { font-size: 5.5rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; }
@@ -67,7 +66,7 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v3.9.1</div>
+    <div class="version-tag">v4.0</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
