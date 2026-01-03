@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.1.1</title>
+    <title>AI 丹田呼吸 v4.2</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -64,7 +64,7 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.1.1</div>
+    <div class="version-tag">v4.2</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -91,11 +91,11 @@
             if (activePhases > 1) remainingSec += (activePhases - 1) * 60;
             document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         } else {
-            // 關鍵優化：精確計算剩餘總時間
-            remainingSec += timeLeft; // 包含休息中的倒數秒數
+            // 修正練習中邏輯：確保進入休息時不重複計算已完成的階段
+            remainingSec += timeLeft; // 包含目前倒數中的秒數（吸/吐或休息）
 
             if (!isResting) {
-                // 處理呼吸階層中的剩餘時間
+                // 如果目前是呼吸中，計算當前階層「剩下」的吸吐
                 const config = phasesConfig[currentPhaseIdx];
                 let remainingSetsInCurrentPhase = config.sets - currentSet;
                 if (phase === "inhale") {
@@ -105,9 +105,9 @@
                 }
             }
 
-            // 處理尚未開始的所有階層及其休息
+            // 加總所有尚未開始的後續階層（含其休息時間）
             for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                remainingSec += 60; // 包含休息調息
+                remainingSec += 60; // 每個新階層前的休息
                 remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
             }
         }
@@ -202,7 +202,7 @@
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
-                calcInfo(); // 休息期間也會持續更新結束時間
+                calcInfo(); // 每秒更新預測
                 if (timeLeft < 0) {
                     clearInterval(timer);
                     if (isResting) {
@@ -237,7 +237,7 @@
                 document.getElementById('st').style.color = "#95a5a6";
                 document.getElementById('btnSkipRest').style.display = 'block';
                 updateTm();
-                calcInfo(); // 進入休息瞬間重新校準時間
+                calcInfo(); 
                 startTimerLogic();
             }, 1500);
         } else {
@@ -249,7 +249,7 @@
         if (isResting) {
             clearInterval(timer);
             timeLeft = 0;
-            calcInfo(); // 跳過瞬間校準，扣除剩餘休息秒數
+            calcInfo(); // 略過瞬間即時修正結束時間
             startCountdown();
         }
     }
