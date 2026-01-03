@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.2</title>
+    <title>AI 丹田呼吸 v4.3</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -64,7 +64,7 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.2</div>
+    <div class="version-tag">v4.3</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -91,27 +91,31 @@
             if (activePhases > 1) remainingSec += (activePhases - 1) * 60;
             document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         } else {
-            // 修正練習中邏輯：確保進入休息時不重複計算已完成的階段
-            remainingSec += timeLeft; // 包含目前倒數中的秒數（吸/吐或休息）
+            // 修正：檢查是否已完成所有配置
+            if (currentPhaseIdx >= phasesConfig.length) {
+                remainingSec = 0;
+            } else {
+                remainingSec += Math.max(0, timeLeft); 
 
-            if (!isResting) {
-                // 如果目前是呼吸中，計算當前階層「剩下」的吸吐
-                const config = phasesConfig[currentPhaseIdx];
-                let remainingSetsInCurrentPhase = config.sets - currentSet;
-                if (phase === "inhale") {
-                    remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
-                } else {
-                    remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
+                if (!isResting) {
+                    const config = phasesConfig[currentPhaseIdx];
+                    let remainingSetsInCurrentPhase = Math.max(0, config.sets - currentSet);
+                    if (phase === "inhale") {
+                        remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
+                    } else {
+                        remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
+                    }
                 }
-            }
 
-            // 加總所有尚未開始的後續階層（含其休息時間）
-            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                remainingSec += 60; // 每個新階層前的休息
-                remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
+                    remainingSec += 60;
+                    remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                }
             }
         }
 
+        // 最終防呆：若數值小於 0 則顯示 00:00
+        remainingSec = Math.max(0, remainingSec);
         const mm = Math.floor(remainingSec / 60), ss = remainingSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
         
@@ -202,7 +206,7 @@
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
-                calcInfo(); // 每秒更新預測
+                calcInfo(); 
                 if (timeLeft < 0) {
                     clearInterval(timer);
                     if (isResting) {
@@ -227,6 +231,7 @@
         currentPhaseIdx++;
         currentSet = 1;
         phase = "inhale";
+        calcInfo(); // 確保結束瞬間欄位更新為 00:00
 
         if (currentPhaseIdx < phasesConfig.length) {
             setTimeout(() => {
@@ -249,7 +254,7 @@
         if (isResting) {
             clearInterval(timer);
             timeLeft = 0;
-            calcInfo(); // 略過瞬間即時修正結束時間
+            calcInfo(); 
             startCountdown();
         }
     }
