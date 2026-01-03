@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.1</title>
+    <title>AI 丹田呼吸 v4.1.1</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
         .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
@@ -64,7 +64,7 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.1</div>
+    <div class="version-tag">v4.1.1</div>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
@@ -73,13 +73,11 @@
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
-    // 計算剩餘/總計時間邏輯
     function calcInfo() {
         let remainingSec = 0;
         let totalSets = 0;
 
         if (!isPracticeRunning) {
-            // 未開始時：計算設定的所有時間
             let activePhases = 0;
             for(let i=1; i<=3; i++) {
                 const s = parseInt(document.getElementById('s'+i).value) || 0;
@@ -90,27 +88,26 @@
                     activePhases++;
                 }
             }
-            if (activePhases > 1) remainingSec += (activePhases - 1) * 60; // 包含 60s 休息
+            if (activePhases > 1) remainingSec += (activePhases - 1) * 60;
             document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         } else {
-            // 練習中：精確計算「從現在起」到結束還剩多少秒
-            // 1. 目前這一組剩餘秒數
-            remainingSec += timeLeft; 
+            // 關鍵優化：精確計算剩餘總時間
+            remainingSec += timeLeft; // 包含休息中的倒數秒數
 
-            // 2. 目前這一階層還沒做完的組數
-            const config = phasesConfig[currentPhaseIdx];
-            let remainingSetsInCurrentPhase = config.sets - currentSet;
-            if (phase === "inhale" && !isResting) {
-                // 如果在吸氣，這組還有一個吐氣 + 完整的剩餘組數
-                remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
-            } else if (phase === "exhale" && !isResting) {
-                // 如果在吐氣，這組只需加剩餘組數
-                remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
+            if (!isResting) {
+                // 處理呼吸階層中的剩餘時間
+                const config = phasesConfig[currentPhaseIdx];
+                let remainingSetsInCurrentPhase = config.sets - currentSet;
+                if (phase === "inhale") {
+                    remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
+                } else {
+                    remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
+                }
             }
 
-            // 3. 尚未開始的後續階層
+            // 處理尚未開始的所有階層及其休息
             for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                remainingSec += 60; // 休息時間
+                remainingSec += 60; // 包含休息調息
                 remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
             }
         }
@@ -205,7 +202,7 @@
         timer = setInterval(() => {
             if (!isPaused) {
                 timeLeft--;
-                calcInfo(); // 每一秒都更新共計與預計結束時間
+                calcInfo(); // 休息期間也會持續更新結束時間
                 if (timeLeft < 0) {
                     clearInterval(timer);
                     if (isResting) {
@@ -240,7 +237,7 @@
                 document.getElementById('st').style.color = "#95a5a6";
                 document.getElementById('btnSkipRest').style.display = 'block';
                 updateTm();
-                calcInfo();
+                calcInfo(); // 進入休息瞬間重新校準時間
                 startTimerLogic();
             }, 1500);
         } else {
@@ -252,8 +249,7 @@
         if (isResting) {
             clearInterval(timer);
             timeLeft = 0;
-            // 略過休息後立即重新計算，時間會瞬間縮短並更新結束點
-            calcInfo(); 
+            calcInfo(); // 跳過瞬間校準，扣除剩餘休息秒數
             startCountdown();
         }
     }
