@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.4</title>
+    <title>AI 丹田呼吸 v4.5</title>
     <style>
-        /* 基礎佈局優化：使用 flex 使內容撐開，確保按鈕置底 */
         body { 
             font-family: -apple-system, sans-serif; 
             background: #f0f4f8; 
@@ -25,14 +24,13 @@
             text-align: center; 
             width: 88%; 
             max-width: 420px; 
-            height: 90vh; /* 給予固定高度百分比以利置底 */
+            height: 90vh; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
             display: flex;
-            flex-direction: column; /* 垂直排列內容 */
+            flex-direction: column; 
             z-index: 1; 
         }
 
-        /* 上半部：顯示區 */
         .display-area { flex-shrink: 0; }
         
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
@@ -48,10 +46,8 @@
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
 
-        /* 中間：彈性空白區，會把按鈕推向底部 */
         .spacer { flex-grow: 1; }
 
-        /* 下半部：操作區 (置底) */
         .controls { 
             display: flex; 
             flex-direction: column; 
@@ -74,6 +70,7 @@
         }
         
         #btnStart { background: #2ecc71; color: white; }
+        #btnClear { background: #bdc3c7; color: white; } /* 清空鍵顏色 */
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnSkipRest { background: #3498db; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
@@ -116,6 +113,7 @@
         
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
+            <button id="btnClear" onclick="doClear()">清空設定</button>
             <button id="btnSkipRest" onclick="doSkipRest()">略過休息</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
@@ -123,15 +121,23 @@
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.4 (重心優化)</div>
+    <div class="version-tag">v4.5</div>
 
 <script>
-    // 保留 v4.3 所有核心邏輯
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false;
     let phasesConfig = []; 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
+
+    // 新增：清空所有輸入框功能
+    function doClear() {
+        for(let i=1; i<=3; i++) {
+            document.getElementById('s'+i).value = 0;
+            document.getElementById('g'+i).value = 0;
+        }
+        calcInfo();
+    }
 
     function calcInfo() {
         let remainingSec = 0;
@@ -205,6 +211,7 @@
         isPracticeRunning = true; isPaused = false;
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnClear').style.display = 'none'; // 開始後隱藏清空鍵
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         calcInfo();
@@ -323,6 +330,7 @@
         document.getElementById('st').style.color = "#3498db";
         document.getElementById('setup').style.display = 'flex';
         document.getElementById('btnStart').style.display = 'block';
+        document.getElementById('btnClear').style.display = 'block'; // 停止後重新顯示清空鍵
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnStop').style.display = 'none';
         calcInfo();
