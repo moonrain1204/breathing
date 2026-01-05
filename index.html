@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.6</title>
+    <title>AI 丹田呼吸 v4.7</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -28,7 +28,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
             display: flex;
             flex-direction: column; 
-            position: relative; /* 讓內部元件可以絕對定位 */
+            position: relative;
             z-index: 1; 
         }
 
@@ -47,14 +47,13 @@
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
 
-        /* 撐開空間，確保按鈕置底 */
         .spacer { flex-grow: 1; }
 
         .controls { 
             display: flex; 
             flex-direction: column; 
             gap: 12px; 
-            padding-bottom: 25px; /* 留空間給版本號 */
+            padding-bottom: 30px; 
             width: 100%;
         }
         
@@ -77,15 +76,13 @@
         #btnSkipRest { background: #3498db; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
         
-        /* 版本號：確保顯示在首頁卡片左下角，且層級最高 */
         .version-tag { 
             position: absolute; 
-            bottom: 8px; 
-            left: 15px; 
+            bottom: 10px; 
+            left: 20px; 
             font-size: 11px; 
-            color: #d1d8dd; /* 稍微深一點的灰色，確保在白色背景可見 */
+            color: #bdc3c7; 
             z-index: 10;
-            pointer-events: none; /* 防止遮擋按鈕點擊 */
         }
     </style>
 </head>
@@ -129,14 +126,12 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-
-        <div class="version-tag">v4.6</div>
+        <div class="version-tag">v4.7</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
 <script>
-    // 邏輯部分完整保留 v4.5 功能
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false;
     let phasesConfig = []; 
@@ -195,6 +190,7 @@
         const endDate = new Date(now.getTime() + (remainingSec * 1000));
         const endH = endDate.getHours(), endM = endDate.getMinutes();
         document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
+        return totalSets; // 回傳總組數供檢查
     }
 
     window.onload = calcInfo;
@@ -211,13 +207,26 @@
 
     function doStart() {
         if (isPracticeRunning) return;
+        
+        // 防呆檢查：若總組數為 0 則不啟動
+        const totalSets = calcInfo();
+        if (totalSets === 0) {
+            alert("請先設定練習秒數與組數");
+            return;
+        }
+
         phasesConfig = [];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0) phasesConfig.push({ sec: s, sets: g, id: i });
+            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i });
         }
-        if (phasesConfig.length === 0) return;
+
+        if (phasesConfig.length === 0) {
+            alert("設定數值無效，請確認秒數與組數皆大於 0");
+            return;
+        }
+
         bgAudio.play().catch(() => {});
         currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
         isPracticeRunning = true; isPaused = false;
