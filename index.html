@@ -3,70 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.3</title>
+    <title>AI 丹田呼吸 v4.4</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; position: relative; overflow: hidden; padding-top: 1vh; }
-        .box { background: white; padding: 15px; border-radius: 25px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1; }
+        /* 基礎佈局優化：使用 flex 使內容撐開，確保按鈕置底 */
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #f0f4f8; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden; 
+            padding: 2vh 0;
+        }
+        
+        .box { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 30px; 
+            text-align: center; 
+            width: 88%; 
+            max-width: 420px; 
+            height: 90vh; /* 給予固定高度百分比以利置底 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column; /* 垂直排列內容 */
+            z-index: 1; 
+        }
+
+        /* 上半部：顯示區 */
+        .display-area { flex-shrink: 0; }
+        
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
         .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 45px; text-align: left; }
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
-        .status { font-size: 3.5rem; font-weight: bold; color: #3498db; min-height: 5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; line-height: 1.1; }
-        .timer { font-size: 5.5rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; }
-        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 10px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 10px; }
+        
+        .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
+        .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
+        
+        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
-        .controls { display: flex; flex-direction: column; gap: 8px; }
-        button { width: 100%; padding: 14px; font-size: 1.3rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+
+        /* 中間：彈性空白區，會把按鈕推向底部 */
+        .spacer { flex-grow: 1; }
+
+        /* 下半部：操作區 (置底) */
+        .controls { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            padding-bottom: 10px; 
+            width: 100%;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 16px; 
+            font-size: 1.4rem; 
+            border-radius: 50px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: all 0.2s; 
+            -webkit-tap-highlight-color: transparent; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
         #btnStart { background: #2ecc71; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnSkipRest { background: #3498db; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
+        
         .version-tag { position: fixed; bottom: 8px; left: 10px; font-size: 11px; color: #bdc3c7; }
     </style>
 </head>
 <body>
     <div class="box">
-        <div id="setup" class="settings">
-            <div class="phase-row">
-                <div class="phase-label">第一組</div>
-                <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
-                <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+        <div class="display-area">
+            <div id="setup" class="settings">
+                <div class="phase-row">
+                    <div class="phase-label">第一組</div>
+                    <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
+                    <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+                </div>
+                <div class="phase-row">
+                    <div class="phase-label">第二組</div>
+                    <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
+                    <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
+                </div>
+                <div class="phase-row">
+                    <div class="phase-label">第三組</div>
+                    <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
+                    <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+                </div>
             </div>
-            <div class="phase-row">
-                <div class="phase-label">第二組</div>
-                <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
-                <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
-            </div>
-            <div class="phase-row">
-                <div class="phase-label">第三組</div>
-                <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
-                <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+            
+            <div class="status" id="st">準備開始</div>
+            <div class="timer" id="tm">00</div>
+            
+            <div class="info-bar">
+                <div class="info-item" id="setDisp">組數: 0 / 0</div>
+                <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
+                <div class="info-item" id="endTimeDisp">結束: --:--</div>
             </div>
         </div>
-        
-        <div class="status" id="st">準備開始</div>
-        <div class="timer" id="tm">00</div>
-        
-        <div class="info-bar">
-            <div class="info-item" id="setDisp">組數: 0 / 0</div>
-            <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
-            <div class="info-item" id="endTimeDisp">結束: --:--</div>
-        </div>
+
+        <div class="spacer"></div>
         
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
-            <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnSkipRest" onclick="doSkipRest()">略過休息</button>
+            <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-    <div class="version-tag">v4.3</div>
+    <div class="version-tag">v4.4 (重心優化)</div>
 
 <script>
+    // 保留 v4.3 所有核心邏輯
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false;
     let phasesConfig = []; 
@@ -91,12 +151,10 @@
             if (activePhases > 1) remainingSec += (activePhases - 1) * 60;
             document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         } else {
-            // 修正：檢查是否已完成所有配置
             if (currentPhaseIdx >= phasesConfig.length) {
                 remainingSec = 0;
             } else {
                 remainingSec += Math.max(0, timeLeft); 
-
                 if (!isResting) {
                     const config = phasesConfig[currentPhaseIdx];
                     let remainingSetsInCurrentPhase = Math.max(0, config.sets - currentSet);
@@ -106,19 +164,15 @@
                         remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
                     }
                 }
-
                 for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
                     remainingSec += 60;
                     remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
                 }
             }
         }
-
-        // 最終防呆：若數值小於 0 則顯示 00:00
         remainingSec = Math.max(0, remainingSec);
         const mm = Math.floor(remainingSec / 60), ss = remainingSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        
         const now = new Date();
         const endDate = new Date(now.getTime() + (remainingSec * 1000));
         const endH = endDate.getHours(), endM = endDate.getMinutes();
@@ -164,14 +218,12 @@
         const st = document.getElementById('st');
         st.innerText = "準備開始";
         st.style.color = "#3498db";
-
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
-            const tm = document.getElementById('tm');
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
                 if (count > 0) {
-                    tm.innerText = "0" + count;
+                    document.getElementById('tm').innerText = "0" + count;
                     speakImmediate(count.toString());
                     count--;
                 } else {
@@ -186,7 +238,6 @@
         if (!isPracticeRunning || isPaused) return;
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
-
         isResting = false;
         document.getElementById('btnSkipRest').style.display = 'none';
         timeLeft = config.sec;
@@ -196,7 +247,6 @@
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
         document.getElementById('setDisp').innerText = `階 ${config.id}: ${currentSet}/${config.sets}`;
         speakImmediate(isInhale ? "吸氣" : "吐氣");
-        
         updateTm();
         startTimerLogic();
     }
@@ -209,9 +259,8 @@
                 calcInfo(); 
                 if (timeLeft < 0) {
                     clearInterval(timer);
-                    if (isResting) {
-                        startCountdown(); 
-                    } else {
+                    if (isResting) { startCountdown(); } 
+                    else {
                         if (phase === "exhale") { currentSet++; phase = "inhale"; } 
                         else { phase = "exhale"; }
                         startPhaseStep();
@@ -227,23 +276,16 @@
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
-
-        currentPhaseIdx++;
-        currentSet = 1;
-        phase = "inhale";
-        calcInfo(); // 確保結束瞬間欄位更新為 00:00
-
+        currentPhaseIdx++; currentSet = 1; phase = "inhale";
+        calcInfo();
         if (currentPhaseIdx < phasesConfig.length) {
             setTimeout(() => {
                 if (!isPracticeRunning) return;
-                isResting = true;
-                timeLeft = 60;
+                isResting = true; timeLeft = 60;
                 document.getElementById('st').innerText = "休息調息";
                 document.getElementById('st').style.color = "#95a5a6";
                 document.getElementById('btnSkipRest').style.display = 'block';
-                updateTm();
-                calcInfo(); 
-                startTimerLogic();
+                updateTm(); calcInfo(); startTimerLogic();
             }, 1500);
         } else {
             setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
