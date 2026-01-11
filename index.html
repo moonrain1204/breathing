@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.7</title>
+    <title>AI 丹田呼吸 v5.9</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -166,7 +166,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.7</div>
+        <div class="version-tag">v5.9</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -271,6 +271,10 @@
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
+        
+        // 【優化】在倒數時就先更新灰色文字的顯示
+        document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
+
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
@@ -292,7 +296,10 @@
         const isInhale = (phase === "inhale");
         document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
         document.getElementById('st').style.color = isInhale ? "#008000" : "#0000ff";
+        
+        // 練習中持續保持更新（確保正確）
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
+        
         speakImmediate(isInhale ? "吸氣" : "吐氣");
         updateTm(); startTimerLogic();
     }
@@ -318,16 +325,15 @@
     function triggerPhaseEnd() {
         if (timer) clearInterval(timer);
         
-        // 無論哪一階段結束，畫面都顯示「停」
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
         
+        const isLastPhase = (currentPhaseIdx >= phasesConfig.length - 1);
         currentPhaseIdx++; currentSet = 1; phase = "inhale";
         calcInfo();
 
-        if (currentPhaseIdx < phasesConfig.length) {
-            // 中間階段結束，語音說「停」後進入休息或下一階段
+        if (!isLastPhase) {
             speakImmediate("停", () => {
                 if (noRestMode) {
                     setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1000);
@@ -343,9 +349,12 @@
                 }
             });
         } else {
-            // 所有階段全部結束，語音說「停」後自動重設回首頁
             speakImmediate("停", () => {
-                setTimeout(() => { if (isPracticeRunning) doStop(); }, 1000);
+                setTimeout(() => { 
+                    if (isPracticeRunning) {
+                        doStop(); 
+                    }
+                }, 1000);
             });
         }
     }
