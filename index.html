@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.4</title>
+    <title>AI 丹田呼吸 v5.5</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -166,7 +166,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.4</div>
+        <div class="version-tag">v5.5</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -193,16 +193,13 @@
     }
 
     function calcInfo() {
-        let totalRemainingSec = 0;
-        let totalSetsCount = 0;
+        let totalRemainingSec = 0, totalSetsCount = 0;
         let activePhases = [];
-
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) activePhases.push({ sec: s, sets: g });
         }
-
         if (!isPracticeRunning) {
             activePhases.forEach((p, index) => {
                 totalRemainingSec += (p.sec * 2 * p.sets);
@@ -220,23 +217,16 @@
             } else {
                 const config = phasesConfig[currentPhaseIdx];
                 let remainingSetsInThisPhase = config.sets - currentSet;
-                if (phase === "inhale") {
-                    totalRemainingSec += config.sec;
-                    totalRemainingSec += (remainingSetsInThisPhase * config.sec * 2);
-                } else {
-                    totalRemainingSec += (remainingSetsInThisPhase * config.sec * 2);
-                }
+                totalRemainingSec += (phase === "inhale" ? config.sec : 0) + (remainingSetsInThisPhase * config.sec * 2);
                 for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
                     if (!noRestMode) totalRemainingSec += 60;
                     totalRemainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
                 }
             }
         }
-
         const mm = Math.floor(totalRemainingSec / 60), ss = totalRemainingSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        const now = new Date();
-        const endDate = new Date(now.getTime() + (totalRemainingSec * 1000));
+        const endDate = new Date(new Date().getTime() + (totalRemainingSec * 1000));
         const endH = endDate.getHours(), endM = endDate.getMinutes();
         document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
         return totalSetsCount;
@@ -261,17 +251,11 @@
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) {
-                phasesConfig.push({ 
-                    sec: s, sets: g, id: i, name: `第${phaseNames[i-1]}階段`
-                });
-            }
+            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i, name: `第${phaseNames[i-1]}階段` });
         }
         if (phasesConfig.length === 0) return;
-
         bgAudio.play().catch(() => {});
-        currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
-        isPracticeRunning = true; isPaused = false;
+        currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false; isPracticeRunning = true; isPaused = false;
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnClear').style.display = 'none';
@@ -287,9 +271,7 @@
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
-        
-        // 恢復純粹播報：丹田呼吸，幾秒，幾組
-        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組`, () => {
+        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
@@ -297,10 +279,7 @@
                     document.getElementById('tm').innerText = "0" + count;
                     speakImmediate(count.toString());
                     count--;
-                } else {
-                    clearInterval(countTimer);
-                    startPhaseStep();
-                }
+                } else { clearInterval(countTimer); startPhaseStep(); }
             }, 1000);
         });
     }
@@ -309,36 +288,29 @@
         if (!isPracticeRunning || isPaused) return;
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
-        isResting = false;
-        timeLeft = config.sec;
+        isResting = false; timeLeft = config.sec;
         const isInhale = (phase === "inhale");
-        const statusEl = document.getElementById('st');
-        statusEl.innerText = isInhale ? "吸氣" : "吐氣";
-        statusEl.style.color = isInhale ? "#008000" : "#0000ff";
-        
-        // 視覺維持完整描述
+        document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
+        document.getElementById('st').style.color = isInhale ? "#008000" : "#0000ff";
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
-        
         speakImmediate(isInhale ? "吸氣" : "吐氣");
-        updateTm();
-        startTimerLogic();
+        updateTm(); startTimerLogic();
     }
 
     function startTimerLogic() {
         if (timer) clearInterval(timer);
         timer = setInterval(() => {
             if (!isPaused) {
-                timeLeft--;
-                calcInfo(); 
+                timeLeft--; calcInfo(); 
                 if (timeLeft < 0) {
                     clearInterval(timer);
-                    if (isResting) { startCountdown(); } 
+                    if (isResting) startCountdown(); 
                     else {
                         if (phase === "exhale") { currentSet++; phase = "inhale"; } 
-                        else { phase = "exhale"; }
+                        else phase = "exhale";
                         startPhaseStep();
                     }
-                } else { updateTm(); }
+                } else updateTm();
             }
         }, 1000);
     }
@@ -351,11 +323,9 @@
         document.getElementById('tm').innerText = "00";
         currentPhaseIdx++; currentSet = 1; phase = "inhale";
         calcInfo();
-        
         if (currentPhaseIdx < phasesConfig.length) {
-            if (noRestMode) {
-                setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
-            } else {
+            if (noRestMode) setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
+            else {
                 setTimeout(() => {
                     if (!isPracticeRunning) return;
                     isResting = true; timeLeft = 60;
@@ -366,31 +336,17 @@
                 }, 1500);
             }
         } else {
-            setTimeout(() => { 
-                if (isPracticeRunning) {
-                    doStop(); 
-                    speakImmediate("練習完成");
-                }
-            }, 2000);
+            setTimeout(() => { if (isPracticeRunning) { doStop(); speakImmediate("練習完成"); } }, 2000);
         }
     }
 
-    function doSkipRest() {
-        if (isResting) {
-            clearInterval(timer);
-            timeLeft = 0;
-            calcInfo(); 
-            startCountdown();
-        }
-    }
+    function doSkipRest() { if (isResting) { clearInterval(timer); timeLeft = 0; calcInfo(); startCountdown(); } }
 
     function doPause() {
         isPaused = !isPaused;
         const btn = document.getElementById('btnPause');
-        if (isPaused) { 
-            clearInterval(timer); synth.cancel(); bgAudio.pause(); 
-            btn.innerText = "繼續"; 
-        } else { 
+        if (isPaused) { clearInterval(timer); synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; } 
+        else { 
             bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
             const stText = document.getElementById('st').innerText;
             if (isResting || stText === "準備開始" || stText === "休息調息") startTimerLogic();
