@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.2</title>
+    <title>AI 丹田呼吸 v5.3</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -130,17 +130,17 @@
                 </div>
                 <div class="settings">
                     <div class="phase-row">
-                        <div class="phase-label">第一組</div>
+                        <div class="phase-label">第一階段</div>
                         <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
                         <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
                     <div class="phase-row">
-                        <div class="phase-label">第二組</div>
+                        <div class="phase-label">第二階段</div>
                         <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
                         <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
                     <div class="phase-row">
-                        <div class="phase-label">第三組</div>
+                        <div class="phase-label">第三階段</div>
                         <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
                         <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
@@ -166,7 +166,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.2</div>
+        <div class="version-tag">v5.3</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -259,10 +259,18 @@
     function doStart() {
         if (isPracticeRunning) return;
         phasesConfig = [];
+        const phaseNames = ["一", "二", "三"];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i });
+            if (g > 0 && s > 0) {
+                phasesConfig.push({ 
+                    sec: s, 
+                    sets: g, 
+                    id: i,
+                    name: `第${phaseNames[i-1]}階段`
+                });
+            }
         }
         if (phasesConfig.length === 0) return;
 
@@ -285,7 +293,7 @@
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
         
-        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
+        speakImmediate(`${config.name}練習，${config.sec}秒，${config.sets}組`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
@@ -311,7 +319,10 @@
         const statusEl = document.getElementById('st');
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
-        document.getElementById('setDisp').innerText = `階 ${config.id}: ${currentSet}/${config.sets}`;
+        
+        // 更新左側進度顯示為指定格式：第X階段Y秒Z組練習
+        document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
+        
         speakImmediate(isInhale ? "吸氣" : "吐氣");
         updateTm();
         startTimerLogic();
@@ -346,7 +357,6 @@
         calcInfo();
         
         if (currentPhaseIdx < phasesConfig.length) {
-            // 還有下一階段
             if (noRestMode) {
                 setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
             } else {
@@ -360,10 +370,9 @@
                 }, 1500);
             }
         } else {
-            // 所有階段全部結束：自動跳轉回首頁
             setTimeout(() => { 
                 if (isPracticeRunning) {
-                    doStop(); // 調用現有的 doStop 邏輯來重置 UI
+                    doStop(); 
                     speakImmediate("練習完成");
                 }
             }, 2000);
@@ -393,7 +402,6 @@
         }
     }
 
-    // 重置並回首頁的邏輯
     function doStop() {
         clearInterval(timer); synth.cancel(); bgAudio.pause();
         isPaused = false; isPracticeRunning = false; isResting = false;
