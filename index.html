@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.9</title>
+    <title>AI 丹田呼吸 v5.1</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -41,7 +41,9 @@
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
         
-        /* 連續模式開關樣式 */
+        /* 讓空白輸入框看起來更清爽 */
+        input:placeholder-shown { background-color: #fff; }
+
         .mode-toggle {
             display: flex;
             align-items: center;
@@ -130,18 +132,18 @@
                 <div class="settings">
                     <div class="phase-row">
                         <div class="phase-label">第一組</div>
-                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
                     <div class="phase-row">
                         <div class="phase-label">第二組</div>
-                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
                     <div class="phase-row">
                         <div class="phase-label">第三組</div>
-                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()" placeholder="組"><label>組</label></div>
                     </div>
                 </div>
             </div>
@@ -165,7 +167,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v4.9</div>
+        <div class="version-tag">v5.1</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -183,10 +185,11 @@
         calcInfo();
     }
 
+    // 優化後的清空功能：將值設為空字串而非 "0"
     function doClear() {
         for(let i=1; i<=3; i++) {
-            document.getElementById('s'+i).value = 0;
-            document.getElementById('g'+i).value = 0;
+            document.getElementById('s'+i).value = "";
+            document.getElementById('g'+i).value = "";
         }
         calcInfo();
     }
@@ -197,6 +200,7 @@
         let activePhases = [];
 
         for(let i=1; i<=3; i++) {
+            // 使用 || 0 確保空白時當作 0 計算
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) activePhases.push({ sec: s, sets: g });
@@ -263,7 +267,10 @@
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i });
         }
-        if (phasesConfig.length === 0) return;
+        if (phasesConfig.length === 0) {
+            alert("請輸入有效的秒數與組數");
+            return;
+        }
 
         bgAudio.play().catch(() => {});
         currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
@@ -283,7 +290,8 @@
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
-        speakImmediate(`階${config.id}練習`, () => {
+        
+        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
@@ -344,10 +352,8 @@
         calcInfo();
         if (currentPhaseIdx < phasesConfig.length) {
             if (noRestMode) {
-                // 連續模式：直接進入下一個階段的倒數
                 setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
             } else {
-                // 普通模式：進入休息
                 setTimeout(() => {
                     if (!isPracticeRunning) return;
                     isResting = true; timeLeft = 60;
