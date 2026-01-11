@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v4.7</title>
+    <title>AI 丹田呼吸 v4.9</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -41,10 +41,41 @@
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
         
+        /* 連續模式開關樣式 */
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 10px 10px;
+            gap: 8px;
+        }
+        .toggle-btn {
+            width: 44px;
+            height: 24px;
+            background: #bdc3c7;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-btn.active { background: #3498db; }
+        .toggle-circle {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: 0.3s;
+        }
+        .toggle-btn.active .toggle-circle { left: 23px; }
+        .mode-text { font-size: 0.8rem; color: #7f8c8d; font-weight: bold; }
+
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
         
-        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 15px; }
+        .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
 
         .spacer { flex-grow: 1; }
@@ -89,21 +120,29 @@
 <body>
     <div class="box">
         <div class="display-area">
-            <div id="setup" class="settings">
-                <div class="phase-row">
-                    <div class="phase-label">第一組</div>
-                    <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
-                    <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+            <div id="setup">
+                <div class="mode-toggle">
+                    <span class="mode-text">連續練習 (不休息)</span>
+                    <div id="noRestToggle" class="toggle-btn" onclick="toggleNoRest()">
+                        <div class="toggle-circle"></div>
+                    </div>
                 </div>
-                <div class="phase-row">
-                    <div class="phase-label">第二組</div>
-                    <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
-                    <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
-                </div>
-                <div class="phase-row">
-                    <div class="phase-label">第三組</div>
-                    <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
-                    <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+                <div class="settings">
+                    <div class="phase-row">
+                        <div class="phase-label">第一組</div>
+                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
+                    </div>
+                    <div class="phase-row">
+                        <div class="phase-label">第二組</div>
+                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
+                    </div>
+                    <div class="phase-row">
+                        <div class="phase-label">第三組</div>
+                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
+                    </div>
                 </div>
             </div>
             
@@ -111,7 +150,7 @@
             <div class="timer" id="tm">00</div>
             
             <div class="info-bar">
-                <div class="info-item" id="setDisp">組數: 0 / 0</div>
+                <div class="info-item" id="setDisp">總組數: 0</div>
                 <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
                 <div class="info-item" id="endTimeDisp">結束: --:--</div>
             </div>
@@ -126,17 +165,23 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v4.7</div>
+        <div class="version-tag">v4.9</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
-    let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false;
+    let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
     let phasesConfig = []; 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
+
+    function toggleNoRest() {
+        noRestMode = !noRestMode;
+        document.getElementById('noRestToggle').classList.toggle('active');
+        calcInfo();
+    }
 
     function doClear() {
         for(let i=1; i<=3; i++) {
@@ -147,50 +192,55 @@
     }
 
     function calcInfo() {
-        let remainingSec = 0;
-        let totalSets = 0;
+        let totalRemainingSec = 0;
+        let totalSetsCount = 0;
+        let activePhases = [];
+
+        for(let i=1; i<=3; i++) {
+            const s = parseInt(document.getElementById('s'+i).value) || 0;
+            const g = parseInt(document.getElementById('g'+i).value) || 0;
+            if (g > 0 && s > 0) activePhases.push({ sec: s, sets: g });
+        }
 
         if (!isPracticeRunning) {
-            let activePhases = 0;
-            for(let i=1; i<=3; i++) {
-                const s = parseInt(document.getElementById('s'+i).value) || 0;
-                const g = parseInt(document.getElementById('g'+i).value) || 0;
-                if (g > 0) {
-                    remainingSec += (s * 2 * g);
-                    totalSets += g;
-                    activePhases++;
+            activePhases.forEach((p, index) => {
+                totalRemainingSec += (p.sec * 2 * p.sets);
+                totalSetsCount += p.sets;
+                if (!noRestMode && index < activePhases.length - 1) {
+                    totalRemainingSec += 60; 
                 }
-            }
-            if (activePhases > 1) remainingSec += (activePhases - 1) * 60;
-            document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
+            });
+            document.getElementById('setDisp').innerText = `總組數: ${totalSetsCount}`;
         } else {
-            if (currentPhaseIdx >= phasesConfig.length) {
-                remainingSec = 0;
+            totalRemainingSec = Math.max(0, timeLeft);
+            if (isResting) {
+                for (let j = currentPhaseIdx; j < phasesConfig.length; j++) {
+                    totalRemainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                    if (!noRestMode && j < phasesConfig.length - 1) totalRemainingSec += 60;
+                }
             } else {
-                remainingSec += Math.max(0, timeLeft); 
-                if (!isResting) {
-                    const config = phasesConfig[currentPhaseIdx];
-                    let remainingSetsInCurrentPhase = Math.max(0, config.sets - currentSet);
-                    if (phase === "inhale") {
-                        remainingSec += config.sec + (remainingSetsInCurrentPhase * config.sec * 2);
-                    } else {
-                        remainingSec += (remainingSetsInCurrentPhase * config.sec * 2);
-                    }
+                const config = phasesConfig[currentPhaseIdx];
+                let remainingSetsInThisPhase = config.sets - currentSet;
+                if (phase === "inhale") {
+                    totalRemainingSec += config.sec;
+                    totalRemainingSec += (remainingSetsInThisPhase * config.sec * 2);
+                } else {
+                    totalRemainingSec += (remainingSetsInThisPhase * config.sec * 2);
                 }
                 for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                    remainingSec += 60;
-                    remainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                    if (!noRestMode) totalRemainingSec += 60;
+                    totalRemainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
                 }
             }
         }
-        remainingSec = Math.max(0, remainingSec);
-        const mm = Math.floor(remainingSec / 60), ss = remainingSec % 60;
+
+        const mm = Math.floor(totalRemainingSec / 60), ss = totalRemainingSec % 60;
         document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
         const now = new Date();
-        const endDate = new Date(now.getTime() + (remainingSec * 1000));
+        const endDate = new Date(now.getTime() + (totalRemainingSec * 1000));
         const endH = endDate.getHours(), endM = endDate.getMinutes();
         document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
-        return totalSets; // 回傳總組數供檢查
+        return totalSetsCount;
     }
 
     window.onload = calcInfo;
@@ -207,25 +257,13 @@
 
     function doStart() {
         if (isPracticeRunning) return;
-        
-        // 防呆檢查：若總組數為 0 則不啟動
-        const totalSets = calcInfo();
-        if (totalSets === 0) {
-            alert("請先設定練習秒數與組數");
-            return;
-        }
-
         phasesConfig = [];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i });
         }
-
-        if (phasesConfig.length === 0) {
-            alert("設定數值無效，請確認秒數與組數皆大於 0");
-            return;
-        }
+        if (phasesConfig.length === 0) return;
 
         bgAudio.play().catch(() => {});
         currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
@@ -243,10 +281,9 @@
         if (!isPracticeRunning) return;
         document.getElementById('btnSkipRest').style.display = 'none';
         const config = phasesConfig[currentPhaseIdx];
-        const st = document.getElementById('st');
-        st.innerText = "準備開始";
-        st.style.color = "#3498db";
-        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
+        document.getElementById('st').innerText = "準備開始";
+        document.getElementById('st').style.color = "#3498db";
+        speakImmediate(`階${config.id}練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
@@ -267,7 +304,6 @@
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
         isResting = false;
-        document.getElementById('btnSkipRest').style.display = 'none';
         timeLeft = config.sec;
         const isInhale = (phase === "inhale");
         const statusEl = document.getElementById('st');
@@ -307,14 +343,20 @@
         currentPhaseIdx++; currentSet = 1; phase = "inhale";
         calcInfo();
         if (currentPhaseIdx < phasesConfig.length) {
-            setTimeout(() => {
-                if (!isPracticeRunning) return;
-                isResting = true; timeLeft = 60;
-                document.getElementById('st').innerText = "休息調息";
-                document.getElementById('st').style.color = "#95a5a6";
-                document.getElementById('btnSkipRest').style.display = 'block';
-                updateTm(); calcInfo(); startTimerLogic();
-            }, 1500);
+            if (noRestMode) {
+                // 連續模式：直接進入下一個階段的倒數
+                setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
+            } else {
+                // 普通模式：進入休息
+                setTimeout(() => {
+                    if (!isPracticeRunning) return;
+                    isResting = true; timeLeft = 60;
+                    document.getElementById('st').innerText = "休息調息";
+                    document.getElementById('st').style.color = "#95a5a6";
+                    document.getElementById('btnSkipRest').style.display = 'block';
+                    updateTm(); calcInfo(); startTimerLogic();
+                }, 1500);
+            }
         } else {
             setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
         }
@@ -331,13 +373,14 @@
 
     function doPause() {
         isPaused = !isPaused;
-        const btn = document.getElementById('btnPause'), st = document.getElementById('st');
+        const btn = document.getElementById('btnPause');
         if (isPaused) { 
             clearInterval(timer); synth.cancel(); bgAudio.pause(); 
             btn.innerText = "繼續"; 
         } else { 
             bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
-            if (isResting || st.innerText === "準備開始" || st.innerText === "休息調息") startTimerLogic();
+            const stText = document.getElementById('st').innerText;
+            if (isResting || stText === "準備開始" || stText === "休息調息") startTimerLogic();
             else startPhaseStep();
         }
     }
@@ -349,9 +392,10 @@
         document.getElementById('tm').innerText = "00";
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
-        document.getElementById('setup').style.display = 'flex';
+        document.getElementById('setup').style.display = 'block';
         document.getElementById('btnStart').style.display = 'block';
         document.getElementById('btnClear').style.display = 'block';
+        document.getElementById('btnPause').innerText = "暫停";
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnStop').style.display = 'none';
         calcInfo();
