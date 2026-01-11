@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.3</title>
+    <title>AI 丹田呼吸 v5.4</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -36,7 +36,7 @@
         
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
-        .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 45px; text-align: left; }
+        .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 60px; text-align: left; }
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
@@ -166,7 +166,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.3</div>
+        <div class="version-tag">v5.4</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -207,9 +207,7 @@
             activePhases.forEach((p, index) => {
                 totalRemainingSec += (p.sec * 2 * p.sets);
                 totalSetsCount += p.sets;
-                if (!noRestMode && index < activePhases.length - 1) {
-                    totalRemainingSec += 60; 
-                }
+                if (!noRestMode && index < activePhases.length - 1) totalRemainingSec += 60; 
             });
             document.getElementById('setDisp').innerText = `總組數: ${totalSetsCount}`;
         } else {
@@ -265,10 +263,7 @@
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) {
                 phasesConfig.push({ 
-                    sec: s, 
-                    sets: g, 
-                    id: i,
-                    name: `第${phaseNames[i-1]}階段`
+                    sec: s, sets: g, id: i, name: `第${phaseNames[i-1]}階段`
                 });
             }
         }
@@ -293,7 +288,8 @@
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('st').style.color = "#3498db";
         
-        speakImmediate(`${config.name}練習，${config.sec}秒，${config.sets}組`, () => {
+        // 恢復純粹播報：丹田呼吸，幾秒，幾組
+        speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
                 if (isPaused) { clearInterval(countTimer); return; }
@@ -320,7 +316,7 @@
         statusEl.innerText = isInhale ? "吸氣" : "吐氣";
         statusEl.style.color = isInhale ? "#008000" : "#0000ff";
         
-        // 更新左側進度顯示為指定格式：第X階段Y秒Z組練習
+        // 視覺維持完整描述
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
         
         speakImmediate(isInhale ? "吸氣" : "吐氣");
