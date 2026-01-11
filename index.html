@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.1</title>
+    <title>AI 丹田呼吸 v5.2</title>
     <style>
         body { 
             font-family: -apple-system, sans-serif; 
@@ -41,7 +41,6 @@
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
         
-        /* 讓空白輸入框看起來更清爽 */
         input:placeholder-shown { background-color: #fff; }
 
         .mode-toggle {
@@ -167,7 +166,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.1</div>
+        <div class="version-tag">v5.2</div>
     </div>
     
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
@@ -185,7 +184,6 @@
         calcInfo();
     }
 
-    // 優化後的清空功能：將值設為空字串而非 "0"
     function doClear() {
         for(let i=1; i<=3; i++) {
             document.getElementById('s'+i).value = "";
@@ -200,7 +198,6 @@
         let activePhases = [];
 
         for(let i=1; i<=3; i++) {
-            // 使用 || 0 確保空白時當作 0 計算
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) activePhases.push({ sec: s, sets: g });
@@ -267,10 +264,7 @@
             const g = parseInt(document.getElementById('g'+i).value) || 0;
             if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i });
         }
-        if (phasesConfig.length === 0) {
-            alert("請輸入有效的秒數與組數");
-            return;
-        }
+        if (phasesConfig.length === 0) return;
 
         bgAudio.play().catch(() => {});
         currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false;
@@ -350,7 +344,9 @@
         document.getElementById('tm').innerText = "00";
         currentPhaseIdx++; currentSet = 1; phase = "inhale";
         calcInfo();
+        
         if (currentPhaseIdx < phasesConfig.length) {
+            // 還有下一階段
             if (noRestMode) {
                 setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1500);
             } else {
@@ -364,7 +360,13 @@
                 }, 1500);
             }
         } else {
-            setTimeout(() => { if (isPracticeRunning) doStop(); }, 2500);
+            // 所有階段全部結束：自動跳轉回首頁
+            setTimeout(() => { 
+                if (isPracticeRunning) {
+                    doStop(); // 調用現有的 doStop 邏輯來重置 UI
+                    speakImmediate("練習完成");
+                }
+            }, 2000);
         }
     }
 
@@ -391,6 +393,7 @@
         }
     }
 
+    // 重置並回首頁的邏輯
     function doStop() {
         clearInterval(timer); synth.cancel(); bgAudio.pause();
         isPaused = false; isPracticeRunning = false; isResting = false;
