@@ -3,119 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v5.9</title>
+    <title>AI 丹田呼吸 v6.3</title>
     <style>
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: #f0f4f8; 
-            display: flex; 
-            justify-content: center; 
-            align-items: flex-start; 
-            height: 100vh; 
-            margin: 0; 
-            overflow: hidden; 
-            padding: 2vh 0;
-        }
-        
-        .box { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 30px; 
-            text-align: center; 
-            width: 88%; 
-            max-width: 420px; 
-            height: 90vh; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            display: flex;
-            flex-direction: column; 
-            position: relative;
-            z-index: 1; 
-        }
-
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
+        .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
         .display-area { flex-shrink: 0; }
-        
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
         .phase-label { font-weight: bold; color: #7f8c8d; font-size: 0.9rem; min-width: 60px; text-align: left; }
         .input-group { flex: 1; display: flex; align-items: center; gap: 5px; }
         .input-group label { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; white-space: nowrap; order: 2; } 
         input { flex: 1; width: 100%; padding: 6px; border-radius: 8px; border: 2px solid #ecf0f1; text-align: center; font-size: 1.1rem; font-weight: bold; color: #34495e; order: 1; } 
-        
-        input:placeholder-shown { background-color: #fff; }
-
-        .mode-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 0 10px 10px;
-            gap: 8px;
-        }
-        .toggle-btn {
-            width: 44px;
-            height: 24px;
-            background: #bdc3c7;
-            border-radius: 20px;
-            position: relative;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        .mode-toggle { display: flex; align-items: center; justify-content: flex-end; padding: 0 10px 10px; gap: 8px; }
+        .toggle-btn { width: 44px; height: 24px; background: #bdc3c7; border-radius: 20px; position: relative; cursor: pointer; transition: 0.3s; }
         .toggle-btn.active { background: #3498db; }
-        .toggle-circle {
-            width: 18px;
-            height: 18px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 3px;
-            left: 3px;
-            transition: 0.3s;
-        }
-        .toggle-btn.active .toggle-circle { left: 23px; }
-        .mode-text { font-size: 0.8rem; color: #7f8c8d; font-weight: bold; }
-
+        .toggle-circle { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
-        
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
-
         .spacer { flex-grow: 1; }
-
-        .controls { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            padding-bottom: 30px; 
-            width: 100%;
-        }
-        
-        button { 
-            width: 100%; 
-            padding: 16px; 
-            font-size: 1.4rem; 
-            border-radius: 50px; 
-            border: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: all 0.2s; 
-            -webkit-tap-highlight-color: transparent; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
+        .controls { display: flex; flex-direction: column; gap: 12px; padding-bottom: 30px; width: 100%; }
+        button { width: 100%; padding: 16px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         #btnStart { background: #2ecc71; color: white; }
         #btnClear { background: #bdc3c7; color: white; }
         #btnPause { background: #f1c40f; color: white; display: none; }
         #btnSkipRest { background: #3498db; color: white; display: none; }
         #btnStop { background: #e74c3c; color: white; display: none; }
-        
-        .version-tag { 
-            position: absolute; 
-            bottom: 10px; 
-            left: 20px; 
-            font-size: 11px; 
-            color: #bdc3c7; 
-            z-index: 10;
-        }
+        .version-tag { position: absolute; bottom: 10px; left: 20px; font-size: 11px; color: #bdc3c7; }
     </style>
 </head>
 <body>
@@ -123,26 +38,24 @@
         <div class="display-area">
             <div id="setup">
                 <div class="mode-toggle">
-                    <span class="mode-text">連續練習 (不休息)</span>
-                    <div id="noRestToggle" class="toggle-btn" onclick="toggleNoRest()">
-                        <div class="toggle-circle"></div>
-                    </div>
+                    <span style="font-size:0.8rem; color:#7f8c8d; font-weight:bold;">連續練習 (不休息)</span>
+                    <div id="noRestToggle" class="toggle-btn" onclick="toggleNoRest()"><div class="toggle-circle"></div></div>
                 </div>
                 <div class="settings">
                     <div class="phase-row">
                         <div class="phase-label">第一階段</div>
-                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
                     </div>
                     <div class="phase-row">
                         <div class="phase-label">第二階段</div>
-                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()" placeholder="組"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
                     </div>
                     <div class="phase-row">
                         <div class="phase-label">第三階段</div>
-                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()" placeholder="秒"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()" placeholder="組"><label>組</label></div>
+                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
+                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
                     </div>
                 </div>
             </div>
@@ -152,13 +65,11 @@
             
             <div class="info-bar">
                 <div class="info-item" id="setDisp">總組數: 0</div>
-                <div class="info-item" id="totalTimeDisp">共計: 00:00</div>
+                <div class="info-item" id="totalTimeDisp">剩餘: 00:00</div>
                 <div class="info-item" id="endTimeDisp">結束: --:--</div>
             </div>
         </div>
-
         <div class="spacer"></div>
-        
         <div class="controls">
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnClear" onclick="doClear()">清空設定</button>
@@ -166,115 +77,123 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v5.9</div>
+        <div class="version-tag">v6.3</div>
     </div>
-    
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
-    let phasesConfig = []; 
+    let phasesConfig = [], fixedEndTimeStr = ""; 
+    let wakeLock = null; // 螢幕恆亮鎖
+
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
-    function toggleNoRest() {
-        noRestMode = !noRestMode;
-        document.getElementById('noRestToggle').classList.toggle('active');
-        calcInfo();
+    // 請求螢幕恆亮
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('螢幕恆亮已啟動');
+            } catch (err) {
+                console.log('無法啟動螢幕恆亮:', err);
+            }
+        }
     }
 
-    function doClear() {
-        for(let i=1; i<=3; i++) {
-            document.getElementById('s'+i).value = "";
-            document.getElementById('g'+i).value = "";
+    // 釋放螢幕恆亮
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+            console.log('螢幕恆亮已釋放');
         }
-        calcInfo();
     }
+
+    function toggleNoRest() { noRestMode = !noRestMode; document.getElementById('noRestToggle').classList.toggle('active'); calcInfo(); }
+    function doClear() { for(let i=1; i<=3; i++) { document.getElementById('s'+i).value = ""; document.getElementById('g'+i).value = ""; } calcInfo(); }
 
     function calcInfo() {
-        let totalRemainingSec = 0, totalSetsCount = 0;
+        let totalSec = 0, totalSets = 0;
         let activePhases = [];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) activePhases.push({ sec: s, sets: g });
+            if (g > 0 && s > 0) activePhases.push({ s, g });
         }
+        activePhases.forEach((p, index) => {
+            totalSec += (p.s * 2 * p.g); totalSets += p.g;
+            if (!noRestMode && index < activePhases.length - 1) totalSec += 60; 
+        });
         if (!isPracticeRunning) {
-            activePhases.forEach((p, index) => {
-                totalRemainingSec += (p.sec * 2 * p.sets);
-                totalSetsCount += p.sets;
-                if (!noRestMode && index < activePhases.length - 1) totalRemainingSec += 60; 
-            });
-            document.getElementById('setDisp').innerText = `總組數: ${totalSetsCount}`;
+            document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
+            updateTotalDisp(totalSec);
+            const endDate = new Date(new Date().getTime() + (totalSec * 1000));
+            fixedEndTimeStr = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
+            document.getElementById('endTimeDisp').innerText = `結束: ${fixedEndTimeStr}`;
         } else {
-            totalRemainingSec = Math.max(0, timeLeft);
-            if (isResting) {
-                for (let j = currentPhaseIdx; j < phasesConfig.length; j++) {
-                    totalRemainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
-                    if (!noRestMode && j < phasesConfig.length - 1) totalRemainingSec += 60;
-                }
-            } else {
-                const config = phasesConfig[currentPhaseIdx];
-                let remainingSetsInThisPhase = config.sets - currentSet;
-                totalRemainingSec += (phase === "inhale" ? config.sec : 0) + (remainingSetsInThisPhase * config.sec * 2);
-                for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                    if (!noRestMode) totalRemainingSec += 60;
-                    totalRemainingSec += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
-                }
-            }
+            updateTotalDisp(getRemainingSec());
+            document.getElementById('endTimeDisp').innerText = `結束: ${fixedEndTimeStr}`;
         }
-        const mm = Math.floor(totalRemainingSec / 60), ss = totalRemainingSec % 60;
-        document.getElementById('totalTimeDisp').innerText = `共計: ${mm < 10 ? '0'+mm : mm}:${ss < 10 ? '0'+ss : ss}`;
-        const endDate = new Date(new Date().getTime() + (totalRemainingSec * 1000));
-        const endH = endDate.getHours(), endM = endDate.getMinutes();
-        document.getElementById('endTimeDisp').innerText = `結束: ${endH < 10 ? '0'+endH : endH}:${endM < 10 ? '0'+endM : endM}`;
-        return totalSetsCount;
     }
 
-    window.onload = calcInfo;
+    function getRemainingSec() {
+        let r = Math.max(0, timeLeft);
+        if (isResting) {
+            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
+                r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                if (!noRestMode) r += 60;
+            }
+        } else {
+            const c = phasesConfig[currentPhaseIdx];
+            r += (phase === "inhale" ? c.sec : 0) + ((c.sets - currentSet) * c.sec * 2);
+            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
+                if (!noRestMode) r += 60;
+                r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+            }
+        }
+        return r;
+    }
+
+    function updateTotalDisp(val) {
+        const mm = Math.floor(val / 60), ss = val % 60;
+        document.getElementById('totalTimeDisp').innerText = `剩餘: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
 
     function speakImmediate(txt, callback) {
         synth.cancel();
-        setTimeout(() => {
-            const u = new SpeechSynthesisUtterance(txt);
-            u.lang = 'zh-TW'; u.rate = 1.2;
-            if(callback) u.onend = callback;
-            synth.speak(u);
-        }, 50);
+        const u = new SpeechSynthesisUtterance(txt);
+        u.lang = 'zh-TW'; u.rate = 1.2;
+        if(callback) u.onend = callback;
+        synth.speak(u);
     }
 
     function doStart() {
-        if (isPracticeRunning) return;
         phasesConfig = [];
-        const phaseNames = ["一", "二", "三"];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, id: i, name: `第${phaseNames[i-1]}階段` });
+            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, name: `第${['一','二','三'][i-1]}階段` });
         }
         if (phasesConfig.length === 0) return;
-        bgAudio.play().catch(() => {});
-        currentPhaseIdx = 0; currentSet = 1; phase = "inhale"; isResting = false; isPracticeRunning = true; isPaused = false;
+        
+        requestWakeLock(); // 啟動恆亮
+        calcInfo(); 
+        isPracticeRunning = true; currentPhaseIdx = 0; currentSet = 1; phase = "inhale";
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnClear').style.display = 'none';
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
-        calcInfo();
+        bgAudio.play().catch(()=>{});
         startCountdown();
     }
 
     function startCountdown() {
-        if (!isPracticeRunning) return;
-        document.getElementById('btnSkipRest').style.display = 'none';
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
-        document.getElementById('st').style.color = "#3498db";
-        
-        // 【優化】在倒數時就先更新灰色文字的顯示
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
-
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
@@ -289,106 +208,92 @@
     }
 
     function startPhaseStep() {
-        if (!isPracticeRunning || isPaused) return;
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
         isResting = false; timeLeft = config.sec;
         const isInhale = (phase === "inhale");
         document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
         document.getElementById('st').style.color = isInhale ? "#008000" : "#0000ff";
-        
-        // 練習中持續保持更新（確保正確）
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
-        
         speakImmediate(isInhale ? "吸氣" : "吐氣");
-        updateTm(); startTimerLogic();
+        updateTm();
+        if (timer) clearInterval(timer);
+        timer = setInterval(timerLogic, 1000);
     }
 
-    function startTimerLogic() {
-        if (timer) clearInterval(timer);
-        timer = setInterval(() => {
-            if (!isPaused) {
-                timeLeft--; calcInfo(); 
-                if (timeLeft < 0) {
-                    clearInterval(timer);
-                    if (isResting) startCountdown(); 
-                    else {
-                        if (phase === "exhale") { currentSet++; phase = "inhale"; } 
-                        else phase = "exhale";
-                        startPhaseStep();
-                    }
-                } else updateTm();
-            }
-        }, 1000);
+    function timerLogic() {
+        if (isPaused) return;
+        timeLeft--;
+        if (timeLeft < 0) {
+            clearInterval(timer);
+            if (phase === "exhale") { currentSet++; phase = "inhale"; } else { phase = "exhale"; }
+            startPhaseStep();
+        } else { updateTm(); calcInfo(); }
     }
 
     function triggerPhaseEnd() {
-        if (timer) clearInterval(timer);
-        
+        clearInterval(timer);
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
-        
-        const isLastPhase = (currentPhaseIdx >= phasesConfig.length - 1);
-        currentPhaseIdx++; currentSet = 1; phase = "inhale";
-        calcInfo();
-
-        if (!isLastPhase) {
-            speakImmediate("停", () => {
-                if (noRestMode) {
-                    setTimeout(() => { if (isPracticeRunning) startCountdown(); }, 1000);
-                } else {
-                    setTimeout(() => {
-                        if (!isPracticeRunning) return;
-                        isResting = true; timeLeft = 60;
-                        document.getElementById('st').innerText = "休息調息";
-                        document.getElementById('st').style.color = "#95a5a6";
-                        document.getElementById('btnSkipRest').style.display = 'block';
-                        updateTm(); calcInfo(); startTimerLogic();
-                    }, 500);
-                }
-            });
-        } else {
-            speakImmediate("停", () => {
-                setTimeout(() => { 
-                    if (isPracticeRunning) {
-                        doStop(); 
-                    }
-                }, 1000);
-            });
-        }
+        const isLast = (currentPhaseIdx >= phasesConfig.length - 1);
+        speakImmediate("停", () => {
+            if (isLast) { setTimeout(doStop, 500); } 
+            else {
+                currentPhaseIdx++; currentSet = 1; phase = "inhale";
+                if (noRestMode) startCountdown(); else startRest();
+            }
+        });
     }
 
-    function doSkipRest() { if (isResting) { clearInterval(timer); timeLeft = 0; calcInfo(); startCountdown(); } }
+    function startRest() {
+        isResting = true; timeLeft = 60;
+        document.getElementById('st').innerText = "休息調息";
+        document.getElementById('st').style.color = "#95a5a6";
+        document.getElementById('btnSkipRest').style.display = 'block';
+        updateTm();
+        timer = setInterval(() => {
+            if (isPaused) return;
+            timeLeft--;
+            if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
+            else { updateTm(); calcInfo(); }
+        }, 1000);
+    }
+
+    function doSkipRest() { clearInterval(timer); timeLeft = -1; document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
 
     function doPause() {
         isPaused = !isPaused;
         const btn = document.getElementById('btnPause');
-        if (isPaused) { clearInterval(timer); synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; } 
-        else { 
-            bgAudio.play(); btn.innerText = "暫停"; calcInfo(); 
-            const stText = document.getElementById('st').innerText;
-            if (isResting || stText === "準備開始" || stText === "休息調息") startTimerLogic();
-            else startPhaseStep();
+        if (isPaused) { 
+            clearInterval(timer); synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
+            releaseWakeLock(); // 暫停時釋放，節省電力
+        } else { 
+            bgAudio.play(); btn.innerText = "暫停"; 
+            requestWakeLock(); // 繼續時重新鎖定
+            timer = setInterval(isResting ? () => {
+                timeLeft--; if(timeLeft<0){clearInterval(timer);startCountdown();}else {updateTm(); calcInfo();}
+            } : timerLogic, 1000); 
         }
     }
 
     function doStop() {
         clearInterval(timer); synth.cancel(); bgAudio.pause();
-        isPaused = false; isPracticeRunning = false; isResting = false;
-        document.getElementById('btnSkipRest').style.display = 'none';
-        document.getElementById('tm').innerText = "00";
-        document.getElementById('st').innerText = "準備開始";
-        document.getElementById('st').style.color = "#3498db";
+        releaseWakeLock(); // 結束必釋放
+        isPaused = false; isPracticeRunning = false;
         document.getElementById('setup').style.display = 'block';
         document.getElementById('btnStart').style.display = 'block';
         document.getElementById('btnClear').style.display = 'block';
-        document.getElementById('btnPause').innerText = "暫停";
         document.getElementById('btnPause').style.display = 'none';
         document.getElementById('btnStop').style.display = 'none';
+        document.getElementById('btnSkipRest').style.display = 'none';
+        document.getElementById('st').innerText = "準備開始";
+        document.getElementById('st').style.color = "#3498db";
+        document.getElementById('tm').innerText = "00";
         calcInfo();
     }
-    function updateTm() { document.getElementById('tm').innerText = timeLeft < 10 ? '0'+timeLeft : timeLeft; }
+
+    function updateTm() { document.getElementById('tm').innerText = String(Math.max(0, timeLeft)).padStart(2, '0'); }
 </script>
 </body>
 </html>
