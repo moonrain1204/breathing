@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.3</title>
+    <title>AI 丹田呼吸 v6.4</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
         .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -77,38 +77,26 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.3</div>
+        <div class="version-tag">v6.4</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
 <script>
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
-    let phasesConfig = [], fixedEndTimeStr = ""; 
-    let wakeLock = null; // 螢幕恆亮鎖
+    let phasesConfig = [], wakeLock = null; 
 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
 
-    // 請求螢幕恆亮
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
-            try {
-                wakeLock = await navigator.wakeLock.request('screen');
-                console.log('螢幕恆亮已啟動');
-            } catch (err) {
-                console.log('無法啟動螢幕恆亮:', err);
-            }
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
         }
     }
 
-    // 釋放螢幕恆亮
     function releaseWakeLock() {
-        if (wakeLock !== null) {
-            wakeLock.release();
-            wakeLock = null;
-            console.log('螢幕恆亮已釋放');
-        }
+        if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
     }
 
     function toggleNoRest() { noRestMode = !noRestMode; document.getElementById('noRestToggle').classList.toggle('active'); calcInfo(); }
@@ -126,16 +114,13 @@
             totalSec += (p.s * 2 * p.g); totalSets += p.g;
             if (!noRestMode && index < activePhases.length - 1) totalSec += 60; 
         });
-        if (!isPracticeRunning) {
-            document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
-            updateTotalDisp(totalSec);
-            const endDate = new Date(new Date().getTime() + (totalSec * 1000));
-            fixedEndTimeStr = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
-            document.getElementById('endTimeDisp').innerText = `結束: ${fixedEndTimeStr}`;
-        } else {
-            updateTotalDisp(getRemainingSec());
-            document.getElementById('endTimeDisp').innerText = `結束: ${fixedEndTimeStr}`;
-        }
+
+        const remaining = isPracticeRunning ? getRemainingSec() : totalSec;
+        const endDate = new Date(new Date().getTime() + (remaining * 1000));
+        
+        if (!isPracticeRunning) document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
+        updateTotalDisp(remaining);
+        document.getElementById('endTimeDisp').innerText = `結束: ${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
     }
 
     function getRemainingSec() {
@@ -178,8 +163,7 @@
         }
         if (phasesConfig.length === 0) return;
         
-        requestWakeLock(); // 啟動恆亮
-        calcInfo(); 
+        requestWakeLock();
         isPracticeRunning = true; currentPhaseIdx = 0; currentSet = 1; phase = "inhale";
         document.getElementById('setup').style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
@@ -187,6 +171,7 @@
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         bgAudio.play().catch(()=>{});
+        calcInfo();
         startCountdown();
     }
 
@@ -197,7 +182,10 @@
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
             const countTimer = setInterval(() => {
-                if (isPaused) { clearInterval(countTimer); return; }
+                if (isPaused) { 
+                    calcInfo(); // 暫停期間持續更新結束時間
+                    return; 
+                }
                 if (count > 0) {
                     document.getElementById('tm').innerText = "0" + count;
                     speakImmediate(count.toString());
@@ -222,7 +210,10 @@
     }
 
     function timerLogic() {
-        if (isPaused) return;
+        if (isPaused) { 
+            calcInfo(); // 暫停期間持續更新結束時間
+            return; 
+        }
         timeLeft--;
         if (timeLeft < 0) {
             clearInterval(timer);
@@ -252,8 +243,9 @@
         document.getElementById('st').style.color = "#95a5a6";
         document.getElementById('btnSkipRest').style.display = 'block';
         updateTm();
+        if (timer) clearInterval(timer);
         timer = setInterval(() => {
-            if (isPaused) return;
+            if (isPaused) { calcInfo(); return; }
             timeLeft--;
             if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
             else { updateTm(); calcInfo(); }
@@ -266,20 +258,30 @@
         isPaused = !isPaused;
         const btn = document.getElementById('btnPause');
         if (isPaused) { 
-            clearInterval(timer); synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
-            releaseWakeLock(); // 暫停時釋放，節省電力
+            synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
+            releaseWakeLock();
+            // 開啟一個獨立計時器讓結束時間在暫停時也能跳動
+            timer = setInterval(() => { if(isPaused) calcInfo(); }, 1000);
         } else { 
             bgAudio.play(); btn.innerText = "暫停"; 
-            requestWakeLock(); // 繼續時重新鎖定
-            timer = setInterval(isResting ? () => {
-                timeLeft--; if(timeLeft<0){clearInterval(timer);startCountdown();}else {updateTm(); calcInfo();}
-            } : timerLogic, 1000); 
+            requestWakeLock();
+            clearInterval(timer); 
+            if (isResting) {
+                timer = setInterval(() => {
+                    if (isPaused) { calcInfo(); return; }
+                    timeLeft--;
+                    if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
+                    else { updateTm(); calcInfo(); }
+                }, 1000);
+            } else {
+                timer = setInterval(timerLogic, 1000); 
+            }
         }
     }
 
     function doStop() {
         clearInterval(timer); synth.cancel(); bgAudio.pause();
-        releaseWakeLock(); // 結束必釋放
+        releaseWakeLock();
         isPaused = false; isPracticeRunning = false;
         document.getElementById('setup').style.display = 'block';
         document.getElementById('btnStart').style.display = 'block';
