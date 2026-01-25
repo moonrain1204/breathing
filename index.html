@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.4</title>
+    <title>AI 丹田呼吸 v6.5</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
         .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -77,7 +77,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.4</div>
+        <div class="version-tag">v6.5</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
@@ -132,7 +132,7 @@
             }
         } else {
             const c = phasesConfig[currentPhaseIdx];
-            r += (phase === "inhale" ? c.sec : 0) + ((c.sets - currentSet) * c.sec * 2);
+            r += (phase === "exhale" ? 0 : c.sec) + ((c.sets - currentSet) * c.sec * 2);
             for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
                 if (!noRestMode) r += 60;
                 r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
@@ -176,26 +176,25 @@
     }
 
     function startCountdown() {
+        if (timer) clearInterval(timer);
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
             let count = 3;
-            const countTimer = setInterval(() => {
-                if (isPaused) { 
-                    calcInfo(); // 暫停期間持續更新結束時間
-                    return; 
-                }
+            timer = setInterval(() => {
+                if (isPaused) return; 
                 if (count > 0) {
                     document.getElementById('tm').innerText = "0" + count;
                     speakImmediate(count.toString());
                     count--;
-                } else { clearInterval(countTimer); startPhaseStep(); }
+                } else { clearInterval(timer); startPhaseStep(); }
             }, 1000);
         });
     }
 
     function startPhaseStep() {
+        if (timer) clearInterval(timer);
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
         isResting = false; timeLeft = config.sec;
@@ -205,15 +204,11 @@
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
         speakImmediate(isInhale ? "吸氣" : "吐氣");
         updateTm();
-        if (timer) clearInterval(timer);
         timer = setInterval(timerLogic, 1000);
     }
 
     function timerLogic() {
-        if (isPaused) { 
-            calcInfo(); // 暫停期間持續更新結束時間
-            return; 
-        }
+        if (isPaused) return;
         timeLeft--;
         if (timeLeft < 0) {
             clearInterval(timer);
@@ -223,7 +218,7 @@
     }
 
     function triggerPhaseEnd() {
-        clearInterval(timer);
+        if (timer) clearInterval(timer);
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
@@ -238,14 +233,14 @@
     }
 
     function startRest() {
+        if (timer) clearInterval(timer);
         isResting = true; timeLeft = 60;
         document.getElementById('st').innerText = "休息調息";
         document.getElementById('st').style.color = "#95a5a6";
         document.getElementById('btnSkipRest').style.display = 'block';
         updateTm();
-        if (timer) clearInterval(timer);
         timer = setInterval(() => {
-            if (isPaused) { calcInfo(); return; }
+            if (isPaused) return;
             timeLeft--;
             if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
             else { updateTm(); calcInfo(); }
@@ -260,19 +255,26 @@
         if (isPaused) { 
             synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
             releaseWakeLock();
-            // 開啟一個獨立計時器讓結束時間在暫停時也能跳動
-            timer = setInterval(() => { if(isPaused) calcInfo(); }, 1000);
+            // 暫停時，清除原本練習用的 timer，改用純更新結束時間用的 timer
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => { calcInfo(); }, 1000);
         } else { 
             bgAudio.play(); btn.innerText = "暫停"; 
             requestWakeLock();
-            clearInterval(timer); 
+            // 取消暫停前，徹底清空剛剛暫停用的計時器
+            if (timer) clearInterval(timer);
+            
+            // 根據當前狀態重新啟動對應計時器
             if (isResting) {
                 timer = setInterval(() => {
-                    if (isPaused) { calcInfo(); return; }
+                    if (isPaused) return;
                     timeLeft--;
                     if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
                     else { updateTm(); calcInfo(); }
                 }, 1000);
+            } else if (document.getElementById('st').innerText === "準備開始" || !isNaN(parseInt(document.getElementById('tm').innerText)) && parseInt(document.getElementById('tm').innerText) <= 3 && document.getElementById('st').innerText === "準備開始") {
+                // 處理倒數階段的恢復
+                startCountdown();
             } else {
                 timer = setInterval(timerLogic, 1000); 
             }
@@ -280,7 +282,8 @@
     }
 
     function doStop() {
-        clearInterval(timer); synth.cancel(); bgAudio.pause();
+        if (timer) clearInterval(timer);
+        synth.cancel(); bgAudio.pause();
         releaseWakeLock();
         isPaused = false; isPracticeRunning = false;
         document.getElementById('setup').style.display = 'block';
