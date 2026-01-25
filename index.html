@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.5</title>
+    <title>AI 丹田呼吸 v6.6</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
         .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -20,6 +20,12 @@
         .toggle-circle { width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
+        
+        /* 階段選擇按鈕樣式 */
+        .phase-selectors { display: none; justify-content: center; gap: 10px; margin: 15px 0; }
+        .phase-btn { flex: 1; padding: 10px 5px; font-size: 0.9rem; background: #3498db; color: white; border-radius: 12px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .phase-btn.active { background: #2980b9; ring: 2px solid #2ecc71; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border: 2px solid #2ecc71; }
+
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
         .spacer { flex-grow: 1; }
@@ -62,6 +68,12 @@
             
             <div class="status" id="st">準備開始</div>
             <div class="timer" id="tm">00</div>
+
+            <div class="phase-selectors" id="phaseSelectors">
+                <button class="phase-btn" id="pBtn1" onclick="selectLimit(0)">13秒</button>
+                <button class="phase-btn" id="pBtn2" onclick="selectLimit(1)">15秒</button>
+                <button class="phase-btn" id="pBtn3" onclick="selectLimit(2)">16秒</button>
+            </div>
             
             <div class="info-bar">
                 <div class="info-item" id="setDisp">總組數: 0</div>
@@ -77,7 +89,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.5</div>
+        <div class="version-tag">v6.6</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
@@ -85,6 +97,7 @@
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
     let phasesConfig = [], wakeLock = null; 
+    let maxPhaseLimit = 2; // 預設執行到最後一階段
 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
@@ -99,7 +112,26 @@
         if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
     }
 
-    function toggleNoRest() { noRestMode = !noRestMode; document.getElementById('noRestToggle').classList.toggle('active'); calcInfo(); }
+    function toggleNoRest() { 
+        noRestMode = !noRestMode; 
+        document.getElementById('noRestToggle').classList.toggle('active'); 
+        calcInfo(); 
+    }
+
+    function selectLimit(idx) {
+        maxPhaseLimit = idx;
+        // 如果選了 13s(0) 或 15s(1)，通常隱含「連續練習」的需求
+        if (!noRestMode && idx < 2) {
+            noRestMode = true;
+            document.getElementById('noRestToggle').classList.add('active');
+        }
+        // 更新 UI 狀態
+        for(let i=0; i<3; i++) {
+            document.getElementById('pBtn'+(i+1)).classList.toggle('active', i === idx);
+        }
+        calcInfo();
+    }
+
     function doClear() { for(let i=1; i<=3; i++) { document.getElementById('s'+i).value = ""; document.getElementById('g'+i).value = ""; } calcInfo(); }
 
     function calcInfo() {
@@ -108,7 +140,8 @@
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) activePhases.push({ s, g });
+            // 根據限制，只計算到目標階段
+            if (g > 0 && s > 0 && (i-1) <= maxPhaseLimit) activePhases.push({ s, g });
         }
         activePhases.forEach((p, index) => {
             totalSec += (p.s * 2 * p.g); totalSets += p.g;
@@ -126,16 +159,20 @@
     function getRemainingSec() {
         let r = Math.max(0, timeLeft);
         if (isResting) {
-            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
-                if (!noRestMode) r += 60;
+            for (let j = currentPhaseIdx + 1; j <= maxPhaseLimit; j++) {
+                if (phasesConfig[j]) {
+                    r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                    if (!noRestMode && j < maxPhaseLimit) r += 60;
+                }
             }
         } else {
             const c = phasesConfig[currentPhaseIdx];
             r += (phase === "exhale" ? 0 : c.sec) + ((c.sets - currentSet) * c.sec * 2);
-            for (let j = currentPhaseIdx + 1; j < phasesConfig.length; j++) {
-                if (!noRestMode) r += 60;
-                r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+            for (let j = currentPhaseIdx + 1; j <= maxPhaseLimit; j++) {
+                if (phasesConfig[j]) {
+                    if (!noRestMode) r += 60;
+                    r += (phasesConfig[j].sec * 2 * phasesConfig[j].sets);
+                }
             }
         }
         return r;
@@ -159,18 +196,28 @@
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0) phasesConfig.push({ sec: s, sets: g, name: `第${['一','二','三'][i-1]}階段` });
+            if (g > 0 && s > 0) {
+                phasesConfig.push({ sec: s, sets: g, name: `第${['一','二','三'][i-1]}階段` });
+                document.getElementById('pBtn'+i).innerText = s + "秒";
+            }
         }
         if (phasesConfig.length === 0) return;
         
         requestWakeLock();
         isPracticeRunning = true; currentPhaseIdx = 0; currentSet = 1; phase = "inhale";
         document.getElementById('setup').style.display = 'none';
+        document.getElementById('phaseSelectors').style.display = 'flex';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnClear').style.display = 'none';
         document.getElementById('btnPause').style.display = 'block';
         document.getElementById('btnStop').style.display = 'block';
         bgAudio.play().catch(()=>{});
+        
+        // 預設為全跑(16s)
+        maxPhaseLimit = 2;
+        for(let i=1; i<=3; i++) document.getElementById('pBtn'+i).classList.remove('active');
+        document.getElementById('pBtn3').classList.add('active');
+
         calcInfo();
         startCountdown();
     }
@@ -222,9 +269,12 @@
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
-        const isLast = (currentPhaseIdx >= phasesConfig.length - 1);
+        
+        // v6.6 核心判斷：是否已經達到按鈕設定的階段上限
+        const isLastConfigured = (currentPhaseIdx >= maxPhaseLimit || currentPhaseIdx >= phasesConfig.length - 1);
+        
         speakImmediate("停", () => {
-            if (isLast) { setTimeout(doStop, 500); } 
+            if (isLastConfigured) { setTimeout(doStop, 500); } 
             else {
                 currentPhaseIdx++; currentSet = 1; phase = "inhale";
                 if (noRestMode) startCountdown(); else startRest();
@@ -255,16 +305,12 @@
         if (isPaused) { 
             synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
             releaseWakeLock();
-            // 暫停時，清除原本練習用的 timer，改用純更新結束時間用的 timer
             if (timer) clearInterval(timer);
             timer = setInterval(() => { calcInfo(); }, 1000);
         } else { 
             bgAudio.play(); btn.innerText = "暫停"; 
             requestWakeLock();
-            // 取消暫停前，徹底清空剛剛暫停用的計時器
             if (timer) clearInterval(timer);
-            
-            // 根據當前狀態重新啟動對應計時器
             if (isResting) {
                 timer = setInterval(() => {
                     if (isPaused) return;
@@ -272,8 +318,7 @@
                     if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
                     else { updateTm(); calcInfo(); }
                 }, 1000);
-            } else if (document.getElementById('st').innerText === "準備開始" || !isNaN(parseInt(document.getElementById('tm').innerText)) && parseInt(document.getElementById('tm').innerText) <= 3 && document.getElementById('st').innerText === "準備開始") {
-                // 處理倒數階段的恢復
+            } else if (document.getElementById('st').innerText === "準備開始" || (parseInt(document.getElementById('tm').innerText) <= 3 && document.getElementById('st').innerText === "準備開始")) {
                 startCountdown();
             } else {
                 timer = setInterval(timerLogic, 1000); 
@@ -287,6 +332,7 @@
         releaseWakeLock();
         isPaused = false; isPracticeRunning = false;
         document.getElementById('setup').style.display = 'block';
+        document.getElementById('phaseSelectors').style.display = 'none';
         document.getElementById('btnStart').style.display = 'block';
         document.getElementById('btnClear').style.display = 'block';
         document.getElementById('btnPause').style.display = 'none';
