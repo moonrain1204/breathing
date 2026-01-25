@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.6</title>
+    <title>AI 丹田呼吸 v6.7</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
         .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -21,15 +21,16 @@
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
         
-        /* 階段選擇按鈕樣式 */
-        .phase-selectors { display: none; justify-content: center; gap: 10px; margin: 15px 0; }
-        .phase-btn { flex: 1; padding: 10px 5px; font-size: 0.9rem; background: #3498db; color: white; border-radius: 12px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
-        .phase-btn.active { background: #2980b9; ring: 2px solid #2ecc71; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); border: 2px solid #2ecc71; }
+        /* v6.7 調整：階段選擇按鈕改為在下方控制區 */
+        .phase-selectors { display: none; justify-content: center; gap: 10px; margin-bottom: 5px; width: 100%; }
+        .phase-btn { flex: 1; padding: 12px 5px; font-size: 1rem; background: #3498db; color: white; border-radius: 15px; border: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; font-weight: bold; }
+        .phase-btn.active { background: #2980b9; border: 3px solid #2ecc71; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
 
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
         .spacer { flex-grow: 1; }
-        .controls { display: flex; flex-direction: column; gap: 12px; padding-bottom: 30px; width: 100%; }
+        .controls { display: flex; flex-direction: column; gap: 12px; padding-bottom: 30px; width: 100%; align-items: center; }
+        
         button { width: 100%; padding: 16px; font-size: 1.4rem; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         #btnStart { background: #2ecc71; color: white; }
         #btnClear { background: #bdc3c7; color: white; }
@@ -68,12 +69,6 @@
             
             <div class="status" id="st">準備開始</div>
             <div class="timer" id="tm">00</div>
-
-            <div class="phase-selectors" id="phaseSelectors">
-                <button class="phase-btn" id="pBtn1" onclick="selectLimit(0)">13秒</button>
-                <button class="phase-btn" id="pBtn2" onclick="selectLimit(1)">15秒</button>
-                <button class="phase-btn" id="pBtn3" onclick="selectLimit(2)">16秒</button>
-            </div>
             
             <div class="info-bar">
                 <div class="info-item" id="setDisp">總組數: 0</div>
@@ -81,15 +76,23 @@
                 <div class="info-item" id="endTimeDisp">結束: --:--</div>
             </div>
         </div>
+
         <div class="spacer"></div>
+
         <div class="controls">
+            <div class="phase-selectors" id="phaseSelectors">
+                <button class="phase-btn" id="pBtn1" onclick="selectLimit(0)">13秒</button>
+                <button class="phase-btn" id="pBtn2" onclick="selectLimit(1)">15秒</button>
+                <button class="phase-btn" id="pBtn3" onclick="selectLimit(2)">16秒</button>
+            </div>
+            
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnClear" onclick="doClear()">清空設定</button>
             <button id="btnSkipRest" onclick="doSkipRest()">略過休息</button>
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.6</div>
+        <div class="version-tag">v6.7</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
@@ -97,7 +100,7 @@
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
     let phasesConfig = [], wakeLock = null; 
-    let maxPhaseLimit = 2; // 預設執行到最後一階段
+    let maxPhaseLimit = 2; 
 
     const synth = window.speechSynthesis;
     const bgAudio = document.getElementById('bgAudio');
@@ -120,12 +123,10 @@
 
     function selectLimit(idx) {
         maxPhaseLimit = idx;
-        // 如果選了 13s(0) 或 15s(1)，通常隱含「連續練習」的需求
         if (!noRestMode && idx < 2) {
             noRestMode = true;
             document.getElementById('noRestToggle').classList.add('active');
         }
-        // 更新 UI 狀態
         for(let i=0; i<3; i++) {
             document.getElementById('pBtn'+(i+1)).classList.toggle('active', i === idx);
         }
@@ -140,7 +141,6 @@
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
             const g = parseInt(document.getElementById('g'+i).value) || 0;
-            // 根據限制，只計算到目標階段
             if (g > 0 && s > 0 && (i-1) <= maxPhaseLimit) activePhases.push({ s, g });
         }
         activePhases.forEach((p, index) => {
@@ -199,6 +199,9 @@
             if (g > 0 && s > 0) {
                 phasesConfig.push({ sec: s, sets: g, name: `第${['一','二','三'][i-1]}階段` });
                 document.getElementById('pBtn'+i).innerText = s + "秒";
+                document.getElementById('pBtn'+i).style.display = 'block';
+            } else {
+                document.getElementById('pBtn'+i).style.display = 'none';
             }
         }
         if (phasesConfig.length === 0) return;
@@ -213,7 +216,6 @@
         document.getElementById('btnStop').style.display = 'block';
         bgAudio.play().catch(()=>{});
         
-        // 預設為全跑(16s)
         maxPhaseLimit = 2;
         for(let i=1; i<=3; i++) document.getElementById('pBtn'+i).classList.remove('active');
         document.getElementById('pBtn3').classList.add('active');
@@ -270,7 +272,6 @@
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
         
-        // v6.6 核心判斷：是否已經達到按鈕設定的階段上限
         const isLastConfigured = (currentPhaseIdx >= maxPhaseLimit || currentPhaseIdx >= phasesConfig.length - 1);
         
         speakImmediate("停", () => {
