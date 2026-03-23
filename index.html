@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.7</title>
+    <title>AI 丹田呼吸 v6.8</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
         .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -21,7 +21,6 @@
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
         
-        /* v6.7 調整：階段選擇按鈕改為在下方控制區 */
         .phase-selectors { display: none; justify-content: center; gap: 10px; margin-bottom: 5px; width: 100%; }
         .phase-btn { flex: 1; padding: 12px 5px; font-size: 1rem; background: #3498db; color: white; border-radius: 15px; border: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; font-weight: bold; }
         .phase-btn.active { background: #2980b9; border: 3px solid #2ecc71; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
@@ -92,7 +91,7 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.7</div>
+        <div class="version-tag">v6.8</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
@@ -103,7 +102,21 @@
     let maxPhaseLimit = 2; 
 
     const synth = window.speechSynthesis;
+    let chineseVoice = null;
     const bgAudio = document.getElementById('bgAudio');
+
+    // v6.8 新增：強制鎖定中文語音
+    function initVoice() {
+        const voices = synth.getVoices();
+        chineseVoice = voices.find(v => v.lang.includes('zh-TW')) || 
+                       voices.find(v => v.lang.includes('zh-HK')) || 
+                       voices.find(v => v.lang.includes('zh-CN')) || 
+                       voices.find(v => v.lang.includes('zh'));
+    }
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = initVoice;
+    }
+    initVoice();
 
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
@@ -147,10 +160,8 @@
             totalSec += (p.s * 2 * p.g); totalSets += p.g;
             if (!noRestMode && index < activePhases.length - 1) totalSec += 60; 
         });
-
         const remaining = isPracticeRunning ? getRemainingSec() : totalSec;
         const endDate = new Date(new Date().getTime() + (remaining * 1000));
-        
         if (!isPracticeRunning) document.getElementById('setDisp').innerText = `總組數: ${totalSets}`;
         updateTotalDisp(remaining);
         document.getElementById('endTimeDisp').innerText = `結束: ${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
@@ -186,12 +197,17 @@
     function speakImmediate(txt, callback) {
         synth.cancel();
         const u = new SpeechSynthesisUtterance(txt);
-        u.lang = 'zh-TW'; u.rate = 1.2;
+        // v6.8 修正：優先使用偵測到的中文語音包，並強制設定 lang 屬性
+        if (chineseVoice) u.voice = chineseVoice;
+        u.lang = 'zh-TW'; 
+        u.rate = 1.2;
+        u.pitch = 1.0;
         if(callback) u.onend = callback;
         synth.speak(u);
     }
 
     function doStart() {
+        initVoice(); // 開始時再次觸發初始化，因部分手機需點擊事件後才釋放語音權限
         phasesConfig = [];
         for(let i=1; i<=3; i++) {
             const s = parseInt(document.getElementById('s'+i).value) || 0;
@@ -271,9 +287,7 @@
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
-        
         const isLastConfigured = (currentPhaseIdx >= maxPhaseLimit || currentPhaseIdx >= phasesConfig.length - 1);
-        
         speakImmediate("停", () => {
             if (isLastConfigured) { setTimeout(doStop, 500); } 
             else {
@@ -344,7 +358,6 @@
         document.getElementById('tm').innerText = "00";
         calcInfo();
     }
-
     function updateTm() { document.getElementById('tm').innerText = String(Math.max(0, timeLeft)).padStart(2, '0'); }
 </script>
 </body>
