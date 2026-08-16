@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI 丹田呼吸 v6.8</title>
+    <title>AI 丹田呼吸 v6.9</title>
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; height: 100vh; margin: 0; overflow: hidden; padding: 2vh 0; }
-        .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; }
+        .box { background: white; padding: 20px; border-radius: 30px; text-align: center; width: 88%; max-width: 420px; height: 90vh; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; z-index: 1; overflow-y: auto; }
         .display-area { flex-shrink: 0; }
         .settings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
         .phase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #f8f9fa; padding: 10px 12px; border-radius: 15px; }
@@ -21,9 +21,12 @@
         .status { font-size: 3rem; font-weight: bold; color: #3498db; min-height: 4.5rem; display: flex; align-items: center; justify-content: center; margin-top: 5px; }
         .timer { font-size: 6rem; font-weight: bold; margin: 0; font-variant-numeric: tabular-nums; line-height: 1; }
         
-        .phase-selectors { display: none; justify-content: center; gap: 10px; margin-bottom: 5px; width: 100%; }
-        .phase-btn { flex: 1; padding: 12px 5px; font-size: 1rem; background: #3498db; color: white; border-radius: 15px; border: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; font-weight: bold; }
+        .phase-selectors { display: none; justify-content: center; gap: 10px; margin-bottom: 5px; width: 100%; flex-wrap: wrap; }
+        .phase-btn { flex: 1; min-width: 70px; padding: 12px 5px; font-size: 1rem; background: #3498db; color: white; border-radius: 15px; border: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; font-weight: bold; }
         .phase-btn.active { background: #2980b9; border: 3px solid #2ecc71; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+
+        .remove-btn { width: 26px; height: 26px; min-width: 26px; background: #e74c3c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+        .add-stage-btn { background: #ecf0f1; color: #3498db; border: 2px dashed #3498db; border-radius: 15px; padding: 10px; font-weight: bold; cursor: pointer; margin-bottom: 12px; width: 100%; font-size: 1rem; }
 
         .info-bar { display: flex; justify-content: space-evenly; align-items: center; color: #95a5a6; margin: 15px 0; font-size: 0.85rem; border-top: 1px solid #eee; padding-top: 15px; }
         .info-item { flex: 1; text-align: center; }
@@ -47,23 +50,8 @@
                     <span style="font-size:0.8rem; color:#7f8c8d; font-weight:bold;">連續練習 (不休息)</span>
                     <div id="noRestToggle" class="toggle-btn" onclick="toggleNoRest()"><div class="toggle-circle"></div></div>
                 </div>
-                <div class="settings">
-                    <div class="phase-row">
-                        <div class="phase-label">第一階段</div>
-                        <div class="input-group"><input type="number" id="s1" value="13" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g1" value="10" oninput="calcInfo()"><label>組</label></div>
-                    </div>
-                    <div class="phase-row">
-                        <div class="phase-label">第二階段</div>
-                        <div class="input-group"><input type="number" id="s2" value="15" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g2" value="10" oninput="calcInfo()"><label>組</label></div>
-                    </div>
-                    <div class="phase-row">
-                        <div class="phase-label">第三階段</div>
-                        <div class="input-group"><input type="number" id="s3" value="16" oninput="calcInfo()"><label>秒</label></div>
-                        <div class="input-group"><input type="number" id="g3" value="15" oninput="calcInfo()"><label>組</label></div>
-                    </div>
-                </div>
+                <div class="settings" id="settingsContainer"></div>
+                <button class="add-stage-btn" id="btnAddStage" onclick="addStage()">＋ 新增階段</button>
             </div>
             
             <div class="status" id="st">準備開始</div>
@@ -79,11 +67,7 @@
         <div class="spacer"></div>
 
         <div class="controls">
-            <div class="phase-selectors" id="phaseSelectors">
-                <button class="phase-btn" id="pBtn1" onclick="selectLimit(0)">13秒</button>
-                <button class="phase-btn" id="pBtn2" onclick="selectLimit(1)">15秒</button>
-                <button class="phase-btn" id="pBtn3" onclick="selectLimit(2)">16秒</button>
-            </div>
+            <div class="phase-selectors" id="phaseSelectors"></div>
             
             <button id="btnStart" onclick="doStart()">開始練習</button>
             <button id="btnClear" onclick="doClear()">清空設定</button>
@@ -91,21 +75,28 @@
             <button id="btnPause" onclick="doPause()">暫停</button>
             <button id="btnStop" onclick="doStop()">停止重設</button>
         </div>
-        <div class="version-tag">v6.8</div>
+        <div class="version-tag">v6.9</div>
     </div>
     <audio id="bgAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
 
 <script>
+    // ===== 核心狀態變數 =====
     let timer = null, timeLeft = 0, isPaused = false, isPracticeRunning = false;
     let currentPhaseIdx = 0, currentSet = 1, phase = "inhale", isResting = false, noRestMode = false;
-    let phasesConfig = [], wakeLock = null; 
-    let maxPhaseLimit = 2; 
+    let phasesConfig = [], wakeLock = null;
+    let maxPhaseLimit = Infinity; // 設定畫面時不限制，開始練習後才依選擇的階段設定
+
+    // v6.9 新增：以「絕對時間戳記」驅動計時，避免背景/鎖屏時 setInterval 被節流造成計時漂移
+    let segEnd = 0;           // 目前段落的結束時間戳記 (ms)
+    let segType = 'idle';     // 'idle' | 'preparing' | 'prep' | 'phase' | 'rest'
+    let prepLast = null;      // 上次播報的準備倒數秒數（避免重複播報）
+    let pausedRemaining = 0;  // 暫停時剩餘秒數快照
 
     const synth = window.speechSynthesis;
     let chineseVoice = null;
     const bgAudio = document.getElementById('bgAudio');
 
-    // v6.8 新增：強制鎖定中文語音
+    // v6.8：強制鎖定中文語音
     function initVoice() {
         const voices = synth.getVoices();
         chineseVoice = voices.find(v => v.lang.includes('zh-TW')) || 
@@ -128,34 +119,103 @@
         if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
     }
 
+    // v6.9 新增：MediaSession，讓系統把此頁視為「媒體播放中」，大幅降低鎖屏/切頁時被凍結的機率
+    function setupMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: '丹田呼吸練習中',
+            artist: 'AI 丹田呼吸 v6.9',
+            album: '呼吸訓練'
+        });
+        navigator.mediaSession.setActionHandler('play', () => { if (isPaused) doPause(); });
+        navigator.mediaSession.setActionHandler('pause', () => { if (!isPaused) doPause(); });
+        navigator.mediaSession.setActionHandler('stop', () => { doStop(); });
+        navigator.mediaSession.playbackState = 'playing';
+    }
+
+    // v6.9 新增：切回分頁/解鎖時，立即校正畫面並重新申請喚醒鎖
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && isPracticeRunning) {
+            if (!isPaused) requestWakeLock();
+            tickSegment();
+        }
+    });
+
     function toggleNoRest() { 
         noRestMode = !noRestMode; 
         document.getElementById('noRestToggle').classList.toggle('active'); 
         calcInfo(); 
     }
 
-    function selectLimit(idx) {
-        maxPhaseLimit = idx;
-        if (!noRestMode && idx < 2) {
-            noRestMode = true;
-            document.getElementById('noRestToggle').classList.add('active');
+    // ===== v6.9 新增：動態階段（可自由新增/刪除） =====
+    const stageDefaults = [ {s:13,g:10}, {s:15,g:10}, {s:16,g:15} ];
+
+    function numToChinese(n) {
+        const cn = ['零','一','二','三','四','五','六','七','八','九'];
+        if (n < 10) return cn[n];
+        if (n < 20) return '十' + (n % 10 === 0 ? '' : cn[n % 10]);
+        if (n < 100) {
+            const tens = Math.floor(n / 10), ones = n % 10;
+            return cn[tens] + '十' + (ones === 0 ? '' : cn[ones]);
         }
-        for(let i=0; i<3; i++) {
-            document.getElementById('pBtn'+(i+1)).classList.toggle('active', i === idx);
-        }
+        return String(n);
+    }
+
+    function getRows() { return Array.from(document.querySelectorAll('#settingsContainer .phase-row')); }
+
+    function createStageRow(sVal, gVal) {
+        const row = document.createElement('div');
+        row.className = 'phase-row';
+        row.innerHTML = `
+            <div class="phase-label"></div>
+            <div class="input-group"><input type="number" class="s-input" value="${sVal}" oninput="calcInfo()"><label>秒</label></div>
+            <div class="input-group"><input type="number" class="g-input" value="${gVal}" oninput="calcInfo()"><label>組</label></div>
+            <div class="remove-btn" onclick="removeStage(this)">✕</div>
+        `;
+        document.getElementById('settingsContainer').appendChild(row);
+    }
+
+    function addStage() {
+        createStageRow(15, 10);
+        renumberStages();
         calcInfo();
     }
 
-    function doClear() { for(let i=1; i<=3; i++) { document.getElementById('s'+i).value = ""; document.getElementById('g'+i).value = ""; } calcInfo(); }
+    function removeStage(el) {
+        if (getRows().length <= 1) return; // 至少保留一組
+        el.closest('.phase-row').remove();
+        renumberStages();
+        calcInfo();
+    }
+
+    function renumberStages() {
+        getRows().forEach((row, i) => {
+            row.querySelector('.phase-label').innerText = `第${numToChinese(i + 1)}階段`;
+        });
+    }
+
+    function initDefaultStages() {
+        document.getElementById('settingsContainer').innerHTML = '';
+        stageDefaults.forEach(d => createStageRow(d.s, d.g));
+        renumberStages();
+    }
+
+    function doClear() {
+        getRows().forEach(row => {
+            row.querySelector('.s-input').value = "";
+            row.querySelector('.g-input').value = "";
+        });
+        calcInfo();
+    }
 
     function calcInfo() {
         let totalSec = 0, totalSets = 0;
         let activePhases = [];
-        for(let i=1; i<=3; i++) {
-            const s = parseInt(document.getElementById('s'+i).value) || 0;
-            const g = parseInt(document.getElementById('g'+i).value) || 0;
-            if (g > 0 && s > 0 && (i-1) <= maxPhaseLimit) activePhases.push({ s, g });
-        }
+        getRows().forEach((row, i) => {
+            const s = parseInt(row.querySelector('.s-input').value) || 0;
+            const g = parseInt(row.querySelector('.g-input').value) || 0;
+            if (g > 0 && s > 0 && i <= maxPhaseLimit) activePhases.push({ s, g });
+        });
         activePhases.forEach((p, index) => {
             totalSec += (p.s * 2 * p.g); totalSets += p.g;
             if (!noRestMode && index < activePhases.length - 1) totalSec += 60; 
@@ -197,7 +257,6 @@
     function speakImmediate(txt, callback) {
         synth.cancel();
         const u = new SpeechSynthesisUtterance(txt);
-        // v6.8 修正：優先使用偵測到的中文語音包，並強制設定 lang 屬性
         if (chineseVoice) u.voice = chineseVoice;
         u.lang = 'zh-TW'; 
         u.rate = 1.2;
@@ -206,23 +265,42 @@
         synth.speak(u);
     }
 
+    function buildPhaseSelectors() {
+        const container = document.getElementById('phaseSelectors');
+        container.innerHTML = '';
+        phasesConfig.forEach((p, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'phase-btn';
+            btn.innerText = p.sec + '秒';
+            btn.onclick = () => selectLimit(idx);
+            container.appendChild(btn);
+        });
+    }
+
+    function selectLimit(idx) {
+        maxPhaseLimit = idx;
+        if (!noRestMode && idx < phasesConfig.length - 1) {
+            noRestMode = true;
+            document.getElementById('noRestToggle').classList.add('active');
+        }
+        document.querySelectorAll('.phase-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+        calcInfo();
+    }
+
     function doStart() {
         initVoice(); // 開始時再次觸發初始化，因部分手機需點擊事件後才釋放語音權限
         phasesConfig = [];
-        for(let i=1; i<=3; i++) {
-            const s = parseInt(document.getElementById('s'+i).value) || 0;
-            const g = parseInt(document.getElementById('g'+i).value) || 0;
+        getRows().forEach((row) => {
+            const s = parseInt(row.querySelector('.s-input').value) || 0;
+            const g = parseInt(row.querySelector('.g-input').value) || 0;
             if (g > 0 && s > 0) {
-                phasesConfig.push({ sec: s, sets: g, name: `第${['一','二','三'][i-1]}階段` });
-                document.getElementById('pBtn'+i).innerText = s + "秒";
-                document.getElementById('pBtn'+i).style.display = 'block';
-            } else {
-                document.getElementById('pBtn'+i).style.display = 'none';
+                phasesConfig.push({ sec: s, sets: g, name: `第${numToChinese(phasesConfig.length + 1)}階段` });
             }
-        }
+        });
         if (phasesConfig.length === 0) return;
         
         requestWakeLock();
+        setupMediaSession();
         isPracticeRunning = true; currentPhaseIdx = 0; currentSet = 1; phase = "inhale";
         document.getElementById('setup').style.display = 'none';
         document.getElementById('phaseSelectors').style.display = 'flex';
@@ -232,58 +310,86 @@
         document.getElementById('btnStop').style.display = 'block';
         bgAudio.play().catch(()=>{});
         
-        maxPhaseLimit = 2;
-        for(let i=1; i<=3; i++) document.getElementById('pBtn'+i).classList.remove('active');
-        document.getElementById('pBtn3').classList.add('active');
+        buildPhaseSelectors();
+        maxPhaseLimit = phasesConfig.length - 1;
+        document.querySelectorAll('.phase-btn').forEach((b, i) => b.classList.toggle('active', i === maxPhaseLimit));
 
         calcInfo();
+        segType = 'preparing';
         startCountdown();
+
+        // v6.9：單一常駐計時器，用真實時間戳記驅動，背景/鎖屏節流時也能自我校正
+        if (timer) clearInterval(timer);
+        timer = setInterval(tickSegment, 200);
     }
 
     function startCountdown() {
-        if (timer) clearInterval(timer);
         const config = phasesConfig[currentPhaseIdx];
         document.getElementById('st').innerText = "準備開始";
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
+        segType = 'preparing';
         speakImmediate(`丹田呼吸，${config.sec}秒，${config.sets}組練習`, () => {
-            let count = 3;
-            timer = setInterval(() => {
-                if (isPaused) return; 
-                if (count > 0) {
-                    document.getElementById('tm').innerText = "0" + count;
-                    speakImmediate(count.toString());
-                    count--;
-                } else { clearInterval(timer); startPhaseStep(); }
-            }, 1000);
+            prepLast = null;
+            segEnd = Date.now() + 3000;
+            segType = 'prep';
         });
     }
 
     function startPhaseStep() {
-        if (timer) clearInterval(timer);
         const config = phasesConfig[currentPhaseIdx];
         if (currentSet > config.sets) { triggerPhaseEnd(); return; }
-        isResting = false; timeLeft = config.sec;
+        isResting = false;
+        timeLeft = config.sec;
+        segEnd = Date.now() + config.sec * 1000;
+        segType = 'phase';
         const isInhale = (phase === "inhale");
         document.getElementById('st').innerText = isInhale ? "吸氣" : "吐氣";
         document.getElementById('st').style.color = isInhale ? "#008000" : "#0000ff";
         document.getElementById('setDisp').innerText = `${config.name} ${config.sec}秒 第${currentSet}/${config.sets}組練習`;
         speakImmediate(isInhale ? "吸氣" : "吐氣");
         updateTm();
-        timer = setInterval(timerLogic, 1000);
     }
 
-    function timerLogic() {
+    // v6.9 新增：以真實時間差計算剩餘秒數，取代單純每秒遞減，避免背景節流造成漂移或卡死
+    function tickSegment() {
+        calcInfo(); // 隨時更新「結束」預估時間，即使暫停中也持續走時
         if (isPaused) return;
-        timeLeft--;
-        if (timeLeft < 0) {
-            clearInterval(timer);
-            if (phase === "exhale") { currentSet++; phase = "inhale"; } else { phase = "exhale"; }
-            startPhaseStep();
-        } else { updateTm(); calcInfo(); }
+
+        if (segType === 'prep') {
+            const remaining = Math.ceil((segEnd - Date.now()) / 1000);
+            if (remaining !== prepLast) {
+                prepLast = remaining;
+                if (remaining > 0) {
+                    document.getElementById('tm').innerText = "0" + remaining;
+                    speakImmediate(remaining.toString());
+                } else {
+                    segType = 'idle';
+                    startPhaseStep();
+                }
+            }
+        } else if (segType === 'phase') {
+            const remaining = Math.ceil((segEnd - Date.now()) / 1000);
+            const disp = Math.max(0, remaining);
+            if (disp !== timeLeft) { timeLeft = disp; updateTm(); }
+            if (remaining <= 0) {
+                segType = 'idle';
+                if (phase === "exhale") { currentSet++; phase = "inhale"; } else { phase = "exhale"; }
+                startPhaseStep();
+            }
+        } else if (segType === 'rest') {
+            const remaining = Math.ceil((segEnd - Date.now()) / 1000);
+            const disp = Math.max(0, remaining);
+            if (disp !== timeLeft) { timeLeft = disp; updateTm(); }
+            if (remaining <= 0) {
+                segType = 'idle';
+                document.getElementById('btnSkipRest').style.display = 'none';
+                startCountdown();
+            }
+        }
     }
 
     function triggerPhaseEnd() {
-        if (timer) clearInterval(timer);
+        segType = 'idle';
         document.getElementById('st').innerText = "停";
         document.getElementById('st').style.color = "#2c3e50";
         document.getElementById('tm').innerText = "00";
@@ -298,56 +404,49 @@
     }
 
     function startRest() {
-        if (timer) clearInterval(timer);
         isResting = true; timeLeft = 60;
+        segEnd = Date.now() + 60000;
+        segType = 'rest';
         document.getElementById('st').innerText = "休息調息";
         document.getElementById('st').style.color = "#95a5a6";
         document.getElementById('btnSkipRest').style.display = 'block';
         updateTm();
-        timer = setInterval(() => {
-            if (isPaused) return;
-            timeLeft--;
-            if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
-            else { updateTm(); calcInfo(); }
-        }, 1000);
     }
 
-    function doSkipRest() { clearInterval(timer); timeLeft = -1; document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
+    function doSkipRest() {
+        document.getElementById('btnSkipRest').style.display = 'none';
+        segType = 'preparing';
+        startCountdown();
+    }
 
+    // v6.9：暫停/繼續改用時間戳記快照，不再需要重建不同的計時迴圈
     function doPause() {
         isPaused = !isPaused;
         const btn = document.getElementById('btnPause');
         if (isPaused) { 
             synth.cancel(); bgAudio.pause(); btn.innerText = "繼續"; 
             releaseWakeLock();
-            if (timer) clearInterval(timer);
-            timer = setInterval(() => { calcInfo(); }, 1000);
+            pausedRemaining = Math.max(0, Math.ceil((segEnd - Date.now()) / 1000));
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         } else { 
-            bgAudio.play(); btn.innerText = "暫停"; 
+            bgAudio.play().catch(()=>{}); btn.innerText = "暫停"; 
             requestWakeLock();
-            if (timer) clearInterval(timer);
-            if (isResting) {
-                timer = setInterval(() => {
-                    if (isPaused) return;
-                    timeLeft--;
-                    if (timeLeft < 0) { clearInterval(timer); document.getElementById('btnSkipRest').style.display = 'none'; startCountdown(); }
-                    else { updateTm(); calcInfo(); }
-                }, 1000);
-            } else if (document.getElementById('st').innerText === "準備開始" || (parseInt(document.getElementById('tm').innerText) <= 3 && document.getElementById('st').innerText === "準備開始")) {
-                startCountdown();
-            } else {
-                timer = setInterval(timerLogic, 1000); 
-            }
+            segEnd = Date.now() + pausedRemaining * 1000;
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         }
     }
 
     function doStop() {
-        if (timer) clearInterval(timer);
+        if (timer) { clearInterval(timer); timer = null; }
         synth.cancel(); bgAudio.pause();
         releaseWakeLock();
         isPaused = false; isPracticeRunning = false;
+        segType = 'idle';
+        maxPhaseLimit = Infinity;
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
         document.getElementById('setup').style.display = 'block';
         document.getElementById('phaseSelectors').style.display = 'none';
+        document.getElementById('phaseSelectors').innerHTML = '';
         document.getElementById('btnStart').style.display = 'block';
         document.getElementById('btnClear').style.display = 'block';
         document.getElementById('btnPause').style.display = 'none';
@@ -359,6 +458,10 @@
         calcInfo();
     }
     function updateTm() { document.getElementById('tm').innerText = String(Math.max(0, timeLeft)).padStart(2, '0'); }
+
+    // ===== 初始化 =====
+    initDefaultStages();
+    calcInfo();
 </script>
 </body>
 </html>
